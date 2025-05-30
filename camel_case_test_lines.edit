@@ -1,0 +1,21 @@
+EXERCISES 
+Exercise 11 
+You’re rewriting an application that used to use YAML as a 
+configuration language. Your company has now standardized on 
+JSON, so you have a bunch of .yaml files that need to be turned 
+into .json. Write a script that takes a directory and converts each 
+.yaml file into a corresponding .json file (so database.yaml becomes 
+database.json, and the contents are valid JSON). 
+Exercise 12 
+Your team initially chose to use camel_case names for variables, 
+but then changed their collective mind and switched to 
+snake_case. Write a script that scans all the source files for 
+camel_case names and reports on them. 
+Exercise 13 
+Following on from the previous exercise, add the ability to 
+change those variable names automatically in one or more files. 
+Remember to keep a backup of the originals in case something 
+goes horribly, horribly wrong. 
+camel_case 
+camel_case 
+camel_case 

@@ -1,0 +1,904 @@
+Chapter 1 First Steps (3)
+    1.1 About Erlang
+        
+        1.1.1 High Availability
+
+        1.1.2 Erland concurrency
+            Fault Tolerance
+            Scalability
+            Distribution
+            Reposonsiveness
+
+        1.1.3 Server-side Systems
+
+        1.1.4 The Development Plaform
+            Open Telecom Platform:
+                concurrency and Distribution patterns
+                Error Detection and recovery
+                Packaging code into libraries
+                Systems deployment
+                Live Code Updates
+        
+        1.1.5 Relationship to Microservices
+            A Service for this section is a part of the system running in a separate OS
+            With this we can distribute the service to many different machine and then avoid the entire machine going down when 1 fails.
+            One of the issues arisses when you want to completely separate the service, you might still have issues with keeping it completely separate.
+        
+    1.2 About Elixir
+
+        1.2.1 Code Simplifaction
+            One of the benifits from Erlang to Elixir if the reduction of boiler plate code that doesnt need to be there.
+                defmodule SumServer do
+                    use GenServer
+                    def start do
+                        GenServer.start(__MODULE__, nil)
+                    end
+                    def sum(server, a, b) do
+                        GenServer.call(server, {:sum, a, b})
+                    end
+                    def handle_call({:sum, a, b}, _from, state) do
+                        {:reply, a + b, state}
+                    end
+                end
+
+        1.2.2 Compsing Functions
+            Pipe Opperator is the glue that takes one form of data and can turn it into an other type or style.
+
+        1.2.3 The Big Picture
+
+    1.3 Disadvantages
+    
+        1.3.1 Speed
+            It will be "slower" but Elixir makes up for it. The scheduler will take care of any issues and will just make the overall system slower if there is any issue with hardware, IT WONT JUST STOP.
+
+        1.3.2 Ecosystem
+
+Chapter 2 Building Blocks (19)
+
+    2.1 The Interactive Shell
+        iex # starts the Interactive shell
+        Also keep in mind that everything returns a value if, whem, for, while, enum etc
+        Line breaks are the end of expression as long as they are valid that is.
+        ctrl-c twice breaks the shell
+
+    2.2 Working with variables
+        Elixir uses dynamic bindings
+        Only use losercase letters with underscores for more than 1 word varibales
+        Remember that you are not mutating a variable you are creating a new variable and rebinding the location.
+
+    2.3 Organizing your Code
+        Use many small functions
+
+        2.3.1 Modules
+             A module is a colection of functions 
+
+             To define a module you will need to to use the defmodule Name do
+             To use the module you can type everything into the shell or use:
+                iex module.file.ex # This will load the script into the shell as well.
+
+                You can create more than 1 in a file and you can nest them as well
+
+        2.3.2 Functions
+            ? returns true/false
+            ! indicates it might raise a error
+
+            defmodule and def are MACROS
+
+            You can omit the parenthsis when calling a function buts its not recommended
+
+            |> Pipe Opperator will place the output of the previous function into the FIRST param of the next
+
+        2.3.3 Function Arity
+            This is the number of arguments a function will take. You can use the \\ to define default values for a param
+        
+        2.3.4 Function Visiblity
+            Functions are by default exported unless you use the defp macro
+        
+        2.3.5 Imports and Aliases
+            import # This will allow you to import other modules into your code.
+            alias mod, as: MyIO # This will import a new module but give it a nickname
+
+            If you dont use the syntax , as: ... 
+            whatever you have after a . will be used.
+        
+        2.3.6 Module Attributes
+            @pi some_info
+            @raduis 2
+
+            These can be used as compile-time constants and can be refrenced with 
+            @pi
+
+            @moduledoc and @doc can be used to fetch docs for the functions if you create and use them
+                Code.fetch_docs(function_name)
+
+                You can even use h function_name within the shell
+
+            Type Specifications
+                or typespecs are used to determine what the input and output of a function is.
+                @spec function_name(number) :: number
+        
+        2.3.7 Comments
+            # Comments start with the # in Elixir
+
+    2.4 Understanding the Type System
+        2.4.1 Numbers
+            / # will always return a float trunc will get rid of the .0000
+            div and rem will return ints
+            _ can act as delimiters for large numbers 1_000_000 == 1000000
+
+        2.4.2 Atoms
+            These are literally named constants
+            You can use spaces as such :"an atom with spaces"
+            What is nice about atoms is that they are just kept within a atom table so you can keep the reasources low
+
+            Aliases
+                Using an uppercase letter to start will create an atom as well
+                AnAtom == :"Elixir.AnAtom"
+
+                TO go a bit further this is the same thing as the alias when you import
+                    alias IO, as: MyIO
+                    MyIO == Elixir.IO
+                
+            Atoms and Booleans
+                :true == true and :false == false
+            
+            Nil and Truthy Values
+                :nil ~- null
+                nil == false and everything else it true
+
+                || returns any value that isn't falsy
+                If you sting a bunch of || together you will just get the last value if everything is false
+
+                && returns the second expression if the first is truthy otherwise it returns the first expression
+
+                SO you can string || to get any value that any value that exists
+
+                Or you an string && to check if the first value is true and retrive the second
+        
+        2.4.3 Tuples
+            To access a tuples element you can use elem(tuple, 1) # where the tuple is a tuple and the 1 is the index of the tuple you want.
+
+            put_elem(tuple, index, value)
+
+            Remember that you will never modify anything in Elixir you must always redifine the variable or pass the new one on
+
+        2.4.4 Lists
+            Keep in mind that it is easy to retieve the first element of a list and harder for the next and so on. It is a value and a refrence to the next element in the list.
+
+            One of the basic ways to get an element is to use the Enum.at(list, index)
+
+            Also there is the 'in' that will check to see if the list contains what you are passing to it
+                5 in [2, 3, 4, 5]
+                true
+
+            List.replace_at(list, index, value)
+
+            List.insert_at(list, index, value) # you can always use the -1 to append to the end of a list
+
+            Recursive List Definition
+                There is a great way to think about lists and that is with the head/tail representation
+
+                list = [head | tail] # with this head is a single element and tail is the rest 
+                list = [head | second | tail] # same with this head= single secong = single tail = rest
+
+                Think of lists as pais, and element and a list, if you want to not use the above syntax you can use hd() or tl() # head or tail in this case
+
+        2.4.5 Immutability
+            Remember that elixir is immutable so you must always rebind a vaiable
+
+            Modifying Tuples
+                Modifying a tuple or anything really will create a shallow copy of the first bit of data and then do the work to it, if you rebind it the old data wont have a reference and be dealt with by the garbabe collector after the opperation.
+            
+            Modifying Lists
+                So for lists you will create a shallow copy of the list up to the element that you want to change and the rest of the list will not be changed or copied as any lists is just element and a reference to the rest of the list.
+
+            Benifits
+                One of the best things about Immutability is that there is no side effects, IE you know what will change no matter what and if you want to change something you must implicitly do that thing.
+
+                The one thing to keep in mind is that anything that you do to other databases will be permanent
+
+        2.4.6 Maps
+            These are key and value pairs
+
+            Dynamically Sized Maps
+                %{} is an empty map
+                
+                There are a few ways to make a map 
+                squares = %{1 => 2, 2 => 4}
+                squares = Map.new([{1, 1}, {2, 2}, {3, 3}])
+
+                And then you can retieve the elements with
+                squares[1] # with the value that is in the [] is the :atom/key of the element not the index
+                Map.get(map, key) # will also work
+                Map.get(map, key, :default) # this is different as you can set the default not found value that will be returned
+
+                Map.fetch(map, key) # This will return a tuple with {:ok, value} or :error if not found
+                Map.fecth!(map, key) will only work if the value exists and crash if not
+
+            Structured Data
+                What is nice about maps is that you can access any amount of data and change anything that you want within the map.
+
+                %{old_map | key: change, key2: change} # this will change the values for key: and key2: only if they exist
+
+                With this being said it is best to create a map with all the keys present and then modify them as needed nil can be the default value until you know what you want in the field
+
+        2.4.7 Binaries and Bitstrings
+            A binary is a chunk of bytes. You can create binaries by encloseing a sequence with << >> it will only store the byte up to 256 anyting higher will result in the rem of the number. However you can denote the amount of bits to use with :: so <<257::16>> 
+            <<1,1>> # This expression places the number 257 into 16 bits of consecutive memory space. The output indicates that you use 2 bytes, both with a value of 1
+
+            <> will concatenate bit strings or binaries
+
+        2.4.8 Strings
+            Binary Strings
+                "This is a string" is the common way to represent a string
+                #{} # This can embed elixir code within a string
+
+                "You can also 
+                    use mulit line strings"
+
+                ~s(this is also a string) # This is using sigils if you want to use quotes in the sigil you must escape them first.
+
+                ~S(doesnt handle escaped characters\\n) # "doesnt handle escaped characters\\n"
+
+                heredocs is the last case and they use """ """
+
+                same as with bit strings we can concatenate with <>
+
+            Character Lists
+                AKA charlist
+                any list of intergers that can be represented as characters can and will be seen as a charlist
+                ~c"ABC" is also a way to get to a charlist
+                'ABC' will also work
+
+                String.to_charlist() will convert a string to a charlist
+            
+        2.4.9 First-Class Functions
+            Within elixir we can assign a FUNCTION to a variable so in that case we are creating an anonymous function or a lambda
+
+            once it is named you can use the (.) to call it with an input # This is because we want to differentiate the difference betweened a named function and the lambda.
+
+            So if you want to use an Enum.each() you can set a function before and then pass a list and the function without describing the function in the Enum.each() call.
+
+            Let's add and other bit of sugar: if you want to just skip the complete setting of a function you can use the &IO.puts/1 # This is the capture Opperator.
+                Where the & sets the function and then you can pass &1 &2 &3 etc where they will refrence the first second and third arguement that is passed.
+
+            Closures
+                A lambda can reference any variable outside it's scope. So with this you can keep a reference to any outside variable if the function is still held with a reference. This is called closure.
+
+                Keep in mind once the closure is set changing the outside varibale will NOT change the closure.
+        
+        2.4.10 Other Built-In Types
+            A reference: Kernel.make_ref/0 this will only be saved for the instance that calles it
+
+            a process idenifier(PID): This is used for dealing with different processes
+
+            the port idenifier: IO is the comunication tool.
+
+        2.4.11 Higher-Level Types
+            Range
+                number..other_number # this will create a range from the number to an other_number
+                These are also enumerable
+            
+            Keyword Lists
+                This is usually set with days = [{:monday, 1}, {:tuesday, 2}] # but can be sortend to 
+                    days= [monday: 1, tuesday: 2]
+
+                The Keyword module is used in this case. Keep in mind this is still a list and complexity is still O(n) many diffent function will use this syntax to add additional options to a function.
+
+            MapSet
+                Use the MapSet module here and you can add in and store uniuqe values, with the value being of any type.
+            
+            Times and Dates
+                Here are some types that we can use here:
+                    Date (~D), Time(~T), DateTime(~U), NaiveDateTime(~N).
+
+                    Once you set the values you can cakl them with the (.) notation hour minute etc
+
+        2.4.12 IO Lists
+            This is used to forward output that will be send to and IO device
+            iolist = [[[~c"He"], "llo,"], " worl", "d!"] # This is just "Hello World!"
+
+            What is nice is that you can incrementaly set all the things you want sent
+                iolist = []
+                iolist = [iolist, "This"]
+                iolist = [iolist, " is"]
+                iolist = [iolist, " an"]
+                iolist = [iolist, " IO list."] # This will append all the new things that will be sent
+
+        2.5 Opperators
+            1 == 1.0 # weak Opperator       true
+            1 === 1.0 # strict Opperator    false
+
+            and, or, not
+
+    2.6 Macros
+        Lots of what helps to run elixir code is the macro. defmodule and def are parts of the macro they help to change the syntax of the code you write.
+
+    2.7 Understanding the Runtime
+        2.7.1 Modules and Functions in the Runtime
+            Module Names and Atoms
+                When you create a module you are in fact creating a file that will be run.
+
+            Pure Erland Modules
+                Now let's talk about this syntax
+                    :code.get_path
+
+                Everything that y=ou create will spawn a file with the name xyz.beam  and they will corrispond to an atom
+
+            Dynamically calling Functions
+                You can Dynamically call function with teh Kernel.apply/3
+                This recieves 3 arguements: the module atom, the function atom, and the list of arguements. Shortend to (MFA) 
+
+        2.7.2 Starting the Runtime
+            Interactive Shell
+                This wont run as fast as a pure complied code so keep that in mind as it need to interpret the code first
+
+            Running Scripts
+                elixir my_source.ex # This will run through the following every time
+                    Beam is started
+                    File is compiled in memory
+                    Whatever code resides outside of the module is interpreted
+                    Once everyting is finished the Beam is stopped.
+
+                If you want to designate that it's a script file append s (exs) where the s stands for script
+
+                So if we had:
+                    defmodule MyModule do
+                        def run do
+                            IO.puts("Called MyModule.run")
+                        end
+                    end
+                    MyModule.run
+
+                If you want to make sure the BEAM doesnt stop on the end you can append --no-halt before the script name # elixir --no-halt script.exs
+
+            The Mix tool
+                This is used to make and use project made up of multiple source files.
+                    mix new my_project
+                    cd my_project
+                    mix compile
+
+                The compile goes through all the source files and places the resulting .beam files in the ebin folder
+
+                You can execute functions with the 
+                    mix run -e 
+
+                You can also run test with the
+                    mix test # This will find the test files and run them for you and let you know if there are issues
+
+    Summary
+         Elixir code is divided into modules and functions.
+         Elixir is a dynamic language. The type of a variable is determined by the value it
+        holds.
+         Data is immutable—it can’t be modified. A function can return the modified
+        version of the input that resides in another memory location. The modified ver-
+        sion shares as much memory as possible with the original data.
+         The most important primitive data types are numbers, atoms, and binaries.
+         There is no Boolean type. Instead, the atoms true and false are used.
+         There is no nullability. The atom nil can be used for this purpose.
+         There is no string type. Instead, you can use either binaries (recommended) or
+        lists (when needed).
+         The built-in complex types are tuples, lists, and maps. Tuples are used to group
+        a small, fixed-size number of fields. Lists are used to manage variable-size collec-
+        tions. A map is a key–value data structure.
+         Range, keyword lists, MapSet, Date, Time, NaiveDateTime, and DateTime are abstrac-
+        tions built on top of the existing built-in types.
+         Functions are first-class citizens.
+         Module names are atoms (or aliases) that correspond to .beam files on the disk.
+         There are multiple ways of starting programs: iex, elixir, and the mix tool.
+
+Chapter 3 Control Flow (69)
+    3.1 Pattern Matching
+        We can start with the = (match Operator)
+    
+        3.1.1 The Match Operator
+            We might at first think of this as an assignment but something more is going on. The left side is called the pattern and the right side is the expression.
+        
+        3.1.2 Matching Tuples
+            {name, age} = {"Bob", 25} #  This is a form of pattern matching
+
+            This is very useful if a function returns a tuple and you want to bind each bit of data to separate variable.
+
+            We could even take some of the outputs and divide them further.
+
+            There is also issues if the right and left sides don't match
+                {name, age} = "can't match"
+                ** (MatchError) no match of right hand side value: "can't match"
+
+        3.1.3 Matching Constants
+            1 = 1 # This is a valid elixir expression 
+            quick side note when creating a tuple you can add an extra field in the begining that will denote what kind of tuple you are making
+                person = {:person, "bob", 25}
+
+            Many times with elixir functions will return {:ok, value} or {:error, reason} lets look at this next line of code.
+            {:ok, contents} = File.read("my_app.config")
+                attempts to opens a file
+                if successful file is extracted and then the contents are sent as contents
+                if it fails error is raised and it will tell you the reason
+
+            You this syntax to write better cases and help deal with bad results
+        
+        3.1.4 Variables in Patterns
+            Aonymous variable is the (_) this will help you still pattern match but ignore data you don't need. You can even still have a descriptive name that will not issue a warning if not used.
+
+            You can even nest pattern matching:
+                {_, {hour, _, _}} = :calendar.local_time()
+
+            What is nice is that you can even pattern match with the names of the variables
+                 {value, value, value} = {127, 127, 127} # this works
+                 {value, value, value} = {127, 127, 1}  # this doesn't work
+
+            Sometimes you will want to pattern match against an allready existing value, this is where the pin operator (^) comes in.
+                expected = "bob"
+                {^expected, _} = {"bob", 25}
+
+                {^expected, _} = {"alice", 31}  # This will raise an error
+
+            The ^ will be treated as if you hard coded the value as "bob"
+
+        3.1.5 Matching Lists
+            You can match to any element of a list
+                [first, second, third] = [1, 2, 3]
+
+                We could also use any of the above as well
+
+            There is a common syntax for matching to elements of a list
+            [head | tail] = [1, 2, 3]
+            
+            There is an elegant way of using matching and the pipe with min
+                [min | _] = Enum.sort([3,2,1])
+            Keep in mind that the hd() might be more elegant but this works as well
+
+        3.1.6 Matching Maps
+            The following is the general way that you would pattern match with a Map:
+                %{name: name, age: age} = %{name: "Bob", age: 25}
+            Keep in mind that when pattern matching with a Map you don't need to have every key on the left hand side
+                %{age: age} = %{name: "Bob", age: 25}
+            You will need to have the key present with the right hand side or you will be given an error
+            
+        3.1.7 Matching Bitsrtings and Binaries
+            You can pattern match with binaries as well
+                iex(1)> binary = <<1, 2, 3>>
+                <<1, 2, 3>>
+                iex(2)> <<b1, b2, b3>> = binary
+                <<1, 2, 3>>
+
+            There is a way to match the first and then the rest of a binary
+                iex(6)> <<b1, rest :: binary>> = binary
+                <<1, 2, 3>>
+            This states that the rest will be of an abbitrary bit size
+
+            You can even separate then into specific sizes
+            <<a :: 4, b :: 4>> = << 155 >>
+            << 155 >>
+            This says that we want then into four-bit sizes
+
+            This is every helpful when trying to parse packed binary contents
+        
+            Matching Binary Strings
+                Recall that strings are just binaries
+                    <<b1, b2, b3>> = "ABC" # So you can take any string and break it into its parts
+
+                That is great for any single character, but what about strings
+                command = "ping www.site.com"
+                "ping " <> url = command
+        
+        3.1.8 Compound Matches
+            You can nest as you need any pattern matching
+                [_, {name, _}, _] = [{"Bob", 25}, {"Alice", 30}, {"John", 35}] # or
+                a = (b = 1 + 3)
+
+            Now let's look at a better example
+                {_, {hour, _, _}} = date_time = :calendar.local_time()
+                Keep in mind that the pattern matching will only occur with the values that is not being ommited.
+
+        3.1.9 General Behavior
+            Pattern = term
+
+    3.2 Matching with Functions
+        This is one of the most powerful uses of pattern matching
+            defmodule Rectangle do
+                def area({a, b}) do
+                    a * b
+                end
+            end 
+
+        This just means that the param passed to the area function will be of the form {a, b}
+        If you don't pass a tuple there will be an issue, you could then try and deal with the cases where you would not send a tuple and have more robustness
+
+        3.2.1 Multiclause Functions
+            What if you wanted to define a function that could take different shapes.
+                rectangle = {:rectangle, 4, 5}
+                square = {:square, 5}
+                circle = {:circle, 4}
+
+            defmodule Geometry do
+                def area({:rectangle, a, b}) do
+                    a * b
+                end
+            
+                def area({:square, a}) do
+                    a * a
+                end
+                def area({:circle, r}) do
+                    r * r * 3.14
+                end
+            end 
+
+            You can see in this case the pattern match will only call the right function if passed the right tuple. Keep in mind that you are creating a single function with clauses. In this way you can't just access one of the clauses. Recall the & that will capture a function. 
+
+            fun = &Geometry.area/1
+
+            What is nice about the clauses is that you can then create all the proper function clauses and then create a dummy function that will take anything else.
+                def area(unknown) do
+                    {:error, {:unknown_shape, unknown}}
+                end
+
+            This must go at the end as it will always try to go through the clauses from top to bottom and this will always pass. Also keep in mind that a function cares about Name and Arity.
+
+        3.2.2 Guards
+            This is helpful for when you want to be sure that you only call a function with the correct data type or values for the param.
+
+            defmodule TestNum do
+                def test(x) when x < 0 do
+                    :negative
+                end
+                def test(x) when x == 0 do
+                    :zero
+                end
+                def test(x) when x > 0 do
+                    :positive
+                end
+            end
+
+            This will test the number and only call the right function if the number is the right value.
+            One thing to keep in mind is that elixir can compare different data types with this syntax
+                number < atom < reference < fun < port < pid < tuple < map < list < bitstring (binary)
+
+            With this in mind we see that a number is always the smallest and we can then extend the Guard to deal with that by adding # when is_number(x) and x > 0 and so on.
+
+            Keep in mind that only certain operators can be called within a Guard:
+                Comparison
+                Boolean
+                Arithmetic
+                Type-check
+
+            So last bit is that the error in a Guard will not return an error it will just make the Guard expressoon false and move on to an other function definition.
+
+        3.2.3 Multiclause Lambdas
+            You can use different clauses within a function definition to separate out the different inputs. This will also be used with Lambdas
+                test_num =
+                    fn
+                        x when is_number(x) and x < 0 -> :negative
+                        x when x == 0 -> :zero
+                        x when is_number(x) and x > 0 -> :positive
+                    end
+
+            As you can see here we have differnt types of Guards within a lambda.
+        
+    3.3 Conditionals
+        If and Case can be used for multicase conditionals. You can also use pattern matching to get a little bit more out of your functions.
+
+        3.3.1 Braching with Multiclause Functions
+            defmodule TestList do
+                def empty?([]), do: true
+                def empty?([_|_]), do: false
+            end
+
+            Then you can also use Guards for different data types.
+                defmodule Polymorphic do
+                    def double(x) when is_number(x), do: 2 * x
+                    def double(x) when is_binary(x), do: x <> x
+                end
+
+            Recersion is a great example of multicase because you can set the base case with a static param.
+                defmodule Fact do
+                    def fact(0), do: 1
+                    def fact(n), do: n * fact(n - 1)
+                end
+            Here we have the base case and then everything else falls from that. You can do a summation for a list with some of the same things.
+
+        3.3.2 Classical Braching Expressions
+            if, unless, cond, case are things that might be better than Multiclause as you will have to recreate the function with guards and still pass the proper param.
+
+            If and Unless
+                if condtion do
+                    ...
+                else
+                    ...
+                end
+                
+                For the one liner we use
+                    if cond, do: thing, else: other_thing
+                Keep in mind that EVERYTHING in elixir will return a value
+
+                unless result == :error, do: something_else
+
+            cond
+                cond do
+                    expression_1 -> 
+                        ...
+                    expression_2 ->
+                        ...
+                    ...
+                end
+                These are used when you can't just pattern match with the value or you have different things to check against. You can also have a defualt case with the last one simply being true -> ...
+
+            case
+                case expression do
+                    pattern_1 ->
+                        ...
+                    pattern_2 ->
+                        ...
+                    ...
+                end
+                The big difference here is that the expression has to pattern match with the expression. You can simply pass a variable that will be evaluated or you can make the expression something that will need to be evaulated. The default pattern will be _ ->
+
+        3.3.3 The with Expression
+            This is useful for when you want to chain a couple of expression and then return the error of the first expression that fails. You want to process registraion data.
+
+                %{
+                "login" => "alice",
+                "email" => "some_email",
+                "password" => "password",
+                "other_field" => "some_value",
+                "yet_another_field" => "...",
+                ...
+                }
+            
+            We want to only worry about login:, email:, password: if you always have the right map it will never have an issue but what if you can't be sure that will happen. You want to return {:ok, result} or {:error, reason}
+
+            If you were to use pattern matching and case to make sure that all the fields are right you might need to have nested cases and it might not look very good. However you can use with:
+                with pattern_1 <- expression_1,
+                    pattern_2 <- expression_2,
+                    ...
+                do
+                    ...
+                end
+
+            For this you will go through each pattern and do the expression if all pass you go onto the do, if any fail the issue is returned as an error.
+
+                def extract_user(user) do
+                    with    {:ok, login} <- extract_login(user),
+                            {:ok, email} <- extract_email(user),
+                            {:ok, password} <- extract_password(user) do
+                        {:ok, %{login: login, email: email, password: password}}
+                    end
+                end
+    3.4 Loops and Itterations
+        The pricipile looping structure in Elixir is Recursion.
+        3.4.1 Iterating with Recursion
+            With many of these examples we want to go through the list or numbers 1 by 1. You start at the "end" of the list and then go to the front recursively. That way you print the front then go back through the list.
+
+        3.4.2 Tail Function Calls
+            If the last thing a function does is call a function (or itself) then it's considered a Tail Function. Tail Recursion dfoesnt consume any more resources.
+
+            defmodule ListHelper do
+                def sum(list) do
+                    do_sum(0, list)
+                end
+                defp do_sum(current_sum, []) do
+                    current_sum
+                end
+                defp do_sum(current_sum, [head | tail]) do
+                    new_sum = head + current_sum
+                    do_sum(new_sum, tail)
+                end
+            end
+
+            Recognizing Tail Calls
+                So for this you must have only the call to an other function as the last line
+                def fun(...) do
+                    1 + another_fun(...)
+                end # This is NOT a tail call as there is more than just a call to a function on the last line.
+
+            Practice
+                See the files that I add to the folder.
+
+        3.4.3 Higher-Order Functions
+            This is when you have a function that takes one for more functions as input or returns one or more functions.
+
+            Enum.each/2 takes and enumerable and a lambda therefore it's a higher order function.
+            Enum.map/2 is also a Higher order function.
+                Enum.map(list, &(2 * &1)) # simplfied lambda that uses &n to take the place of the nth arguement
+
+            Let's talk about filter for a second
+                With this you can something like this
+                case Enum.filter(
+                            ["login", "email", "password"],  # Sets the different things to look for
+                            &(not Map.has_key?(user, &1)) # Shorted Lambda to check a difined user
+                        ) do
+                    [] -> # Returns nothing if its not missing as we check not has_key
+                        ...
+                    missing_fields -> # If the field is missing then we do something
+                        ...
+                end # You could then pass all of this to an Enum.map/2 to keep all the fields
+
+            Reduce
+                Enum.reduce/3 is probably the most useful of all the Enums as it can do some much.
+                    Enum.reduce(
+                        enumerable,
+                        initial_acc,
+                        fn element, acc ->
+                        ...
+                        end
+                    ) # It will follow this syntax
+
+                You can use operators to turn the function into something more consise with &+/2, &*/2
+                    Enum.reduce(list, 0, &+/2) # Will add the values of the list.
+
+                Remembet that you can always have different conditions (multiclass lambda) for pattern matching with any lambda you write:
+                    Enum.reduce(list_with_not_a_number, 0, fn 
+                            element, sum when is_number(element) ->
+                            sum + element
+                            
+                            _, sum -> 
+                            sum
+                            end
+                            ) # With this we will always try to make to is_number/1 but if not then we just do nothing with the acc
+
+                With all this being said it is more Elixir to have cleaner code and you might just make a helper function that will be called in the place of the single lambda.
+
+                    defmodule NumHelper do
+                        def sum_nums(enumerable) do
+                            Enum.reduce(enumerable, 0, &add_num/2)
+                        end
+                        defp add_num(num, sum) when is_number(num), do: sum + num
+                        defp add_num(_, sum), do: sum
+                    end # In this way you have a clean function that will still have pattern matching (multiclass)
+
+        3.4.4 Comprehensions
+            Denotes another expression that can help you iterate and transform enumerables.
+                for x <- list do
+                    x*x
+                end
+
+            This is great for permutations and things like that. These will iterate through anything that is enumerable. You can add in the into: to make the for a lambda and have it work for anything you put into it:
+                multiplication_table =
+                    for x <- 1..9,
+                        y <- 1..9,
+                        into: %{} do # This specifies the collectable
+                    {{x, y}, x*y}
+                end
+                This will populate the entire table for the multiplication_table for the numbers 1..9:
+                    Map.get(multiplication_table, {7, 6}) # This will pull the key for the {7,6}
+
+                IF you want to do some more filtering for the list you can then use an other param in the defintion.
+                    for ...
+                    ,...
+                    , x >= y # This line will ensure that you only return the values for x and y that work with the check.
+
+                This can also iterate through a binary but the syntax is different
+
+        3.4.5 Streams
+            This is a special kind of enumerable tha can be useful for lazy composable operations. Let's say that you want to index and print the list of employees
+
+            First you would Enum.with_index/1 then Enum.each/2 to get the list. The problems here is that you are going through the list twice once for each Enum.
+
+            So there is a few things about stream that we should go over first is that it only creates the stream and nothing else. You will tell it what to do with the stream but you will need to then output it to a list or something you need.
+                stream = Stream.map([1, 2, 3], fn x -> 2 * x end) # This created the stream
+                Enum.to_list(stream) # This takes the stream and does something to it.
+
+            Now remeber that this is a lazy way of doing things it will only do what you ask it for an nothing else. You can use this to your advatage with Enum.take/2
+                Enum.take(stream, 1)
+
+            Now back to our example we can use the Stream.with_index/1 and knowing how the index is written you can itterate the entire list with some small changes.
+                employees
+                |> Stream.with_index()
+                |> Enum.each(fn {employee, index} -> 
+                    IO.puts("#{index + 1}. #{employee}")
+                end) # Very elegant solution to the problem
+
+            You can do a lot with this and continue to pass more and more into the Stream as needed.
+                [9, -1, "foo", 25, 49]
+                |> Stream.filter(&(is_number(&1) and &1 > 0))
+                |> Stream.map(&{&1, :math.sqrt(&1)}) 
+                # This was the hardest to get my head around as you are making a consise lambda and then taking 
+                # the first arguement to create a tuple with the number and sqrt.
+                |> Stream.with_index()
+                |> Enum.each(fn {{input, result}, index} ->
+                    IO.puts("#{index + 1}. sqrt(#{input}) = #{result}")
+                end)
+
+            Keeping in mind the syntax and format of the output of each function. This is also done in a single pass for each element of the list not running through it every time a new Enum is done.
+
+            There is also the file stream to go through each line of a file one at a time WITHOUT putting the entire file into memory.
+                def large_lines!(path) do
+                    File.stream!(path)
+                    |> Stream.map(&String.trim_trailing(&1, "\n"))
+                    |> Enum.filter(&(String.length(&1) > 80))
+                end
+            
+            Infinite Streams
+                What about infinite streams Stream.iterate/2 can come in here. This one will just conitinue to itterate over the function that you pass it
+
+                Stream.repeatedly/1 will work just as above but is meant to go through a file or stream.
+
+    Practice Exercises
+        Again see the pages that I add to the folder
+
+Chapter 4 Data Abstraction (112)
+    Instead of classes you use modules, also remember that Elixir is immutable so you will always have to rebind the output into the same or an other variable. They might be modifiers and they might be query function but they useually will take and return the same value types.
+
+    4.1 Abstracting with Modules
+        So without going into the schemaless you can abstract a new data type with the MapSet.new() and MapSet.put/2
+
+        4.1.1 Basic Abstraction
+            `D[] is the syntax for a date type
+            While we are trying to create a todo-list we want to have a special module for just the todo-list.
+
+            You can create a new list with the def new, do: %{} 
+
+            Then once you have the date and title you can add in the update/add functionality
+
+            Once that is done you can add the get_entries based off a date. Keep in mind that this will not store the data within anyting you must pass the map to the function after binding it.
+
+        4.1.2 Composting Abstractions
+            You can always take some of the code and move it to an other module. In this way (with the proper nameing)  things will looks more clear. LIke in the example you will create a function/module that will take the add/remove lookup and make it their own functions.
+
+        4.1.3 Structuring Data with Maps
+            Now keep in mind with the above you are manually hardcoding the date to add to the todo, if you were to want to change the entry to an other date type you will break the functionality. What if there was a way to pass everything all at once and then get the information from that item.
+
+            This is were Maps can help again. Put everything into a map and use the (.) notation to pull the iunformation that you need.
+
+        4.1.4 Abstracting with Structs
+            With this example we will be trying to deal with fractions. When dealing with a struct you want to use this syntax:
+                defmodule Name do
+                    defstruct a: nil, b: nil
+                    ...
+                end
+
+            And to invoke the new struct:
+                %Name{$info goes here}
+
+            One thing to keep in mind is that you can pattern match a struct to a struct but a struct is NOT a map.
+            You can add or update a struct like a map:
+                struct = %Name{other_struct | b: 4} # assuming that b is a valid key.
+
+            Check out the module that I created for this but you can always use the (.) notation to decompose the fields
+
+            Structs vs Maps
+                One thing to keep in mind is that you can't Enum a struct they are special.
+                But you can use the Map module in the same way with Structs. Wierd thing here is that a Map can match a struct, but a struct can't match a map. This is because to match to a struct you must have all the fields present and the struct has the __struct__ and the name in the field.
+
+            Records
+                defrecord and defrecordp 
+
+        4.1.5 Data Transparency
+            Data is almost never hidden within Elixir. You will have everyting out in the open unless you take away some of the functionality. Most of the outputs will have some flare attached to it from the way the functions return values. The IO module has an inspect that will show more raw data.
+
+            Also keep in mind that the return value of an inspect will alays be the thing that is sent to the inspect. So with label: and pipeing you can debug more easily.
+
+    4.2 Working with Hierarchial Data
+        We want to add CRUD support.
+
+        4.2.1 Generating IDs
+            To do this we need to do 2 things:
+                Represent the to-do list as a struct as we have more information in the struct ID and the entry
+                Use the entries ID as the key
+
+            See the module that I added.
+
+            If you want to get all the values from a Map you can use the Map.values/1
+
+        4.2.2 Updating Entires
+            first you look up the id with Map.fetch/2 then you update with the lambda that we pass into the function.
+
+        4.2.3 Immutable Hierarchial Updates
+            1 You take the target entry into a separate variable.
+            2 You call the updater that returns the modified version of the entry to you.
+            3 You call Map.put to put the modified entry into the entries collection.
+            4 You return the new version of the to-do list, which contains the new entries
+            collection.
+
+            So as this is Hierarchial data you can't just update any part of the data you must walk down the tree to get to the place that you want to change create a copy and then change what needs to be changed.
+
+            Provided Helpers
+                Kernel.put_in/2 is a macro that allows you to get to the right place and change a value.
+                You will need to use [] and (.) notation to get to the proper place but once there you will be able to change values. Again this is immutable so you must bind the new struct or map.
+
+            Deleting an Entry
+                You will need to get to the location then Map.delete\
+        
+        4.2.4 Iterative Updates
+            131

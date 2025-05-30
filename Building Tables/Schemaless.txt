@@ -1,0 +1,52 @@
+Parsing and Assingning the Sorting Parameters # This is a quick detour for learning Schemaless
+
+    Using Ecto.Enum Inside a Schemaless Changest
+        This is a normal schema
+            schema "my_models" do
+                field :name, :string
+                field :age, :integer
+                field :status, Ecto.Enum, values: [:active, :inactive]
+            end
+        
+        Ecto.Enum can set some values that work for a given field. However for this task schemas normally corrispond to a database but in this case it will be stored within memory. So we need a schemaless changeset. Add to this that Ecto.Enum can only be used with Ecto.Schema so we need to find a different way to validate the input. We will use Ecto.ParameterizedType
+
+        So 
+        field :sort_by, Ecto.Enum, values: [:id, :name]
+        turns into
+        sort_by: {:parameterized, Ecto.Enum, Ecto.Enum.init(values: [:id, :name])}
+
+        putting this together we can create a helper function for future validations
+
+        defmodule Meow.EctoHelper do
+            def enum(values) do
+            {:parameterized, {Ecto.Enum, Ecto.Enum.init(values: values)}}
+            end
+        end
+
+    Building a Schemaless Changeset
+        defmodule MeowWeb.Forms.SortingForm do
+        import Ecto.Changeset
+        alias Meow.EctoHelper
+
+        @fields %{
+            sort_by: EctoHelper.enum([:id, :name]),
+            sort_dir: EctoHelper.enum([:asc, :desc])
+        }
+        @default_values %{
+            sort_by: :id,
+            sort_dir: :asc
+        }
+
+        # This will take a map and check to see if the values will work.
+        def parse(params) do
+            {@default_values, @fields}
+            |> cast(params, Map.keys(@fields))
+            |> apply_action(:insert)
+        end
+
+        # This will be called if any of the 2 needed parameters are missing
+        def default_values(), do: @default_values
+        end
+
+    Testing the Sorting Form
+        

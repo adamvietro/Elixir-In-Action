@@ -1,0 +1,40 @@
+# Triangles
+
+## Section
+
+```elixir
+defmodule Solution do
+  def triangle(_iteration \\ 0) do
+    Enum.map(0..(32 - 1), fn row ->
+      Enum.map(0..(63 - 1), fn col ->
+        if col < 31 - row or col > 31 + row, do: "_", else: 1
+      end)
+    end)
+  end
+
+  def printable(lists) do
+    Enum.map(lists, fn list ->
+      Enum.join(list, "")
+    end)
+  end
+
+  def printable_with_index(list) do
+    1..length(list)
+    |> Stream.zip(list)
+    |> Enum.into(%{})
+  end
+
+  def print_puts(lists) do
+    Enum.each(lists, fn row ->
+      IO.puts(row)
+    end)
+  end
+end
+```
+
+```elixir
+Solution.triangle()
+|> Solution.printable()
+|> Solution.print_puts()
+# |> Solution.printable_with_index()
+```

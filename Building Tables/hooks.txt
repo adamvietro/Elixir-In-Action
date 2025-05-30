@@ -1,0 +1,52 @@
+
+A Brief Excursion into LiveView Client Hooks
+    In the beginning we has a hard time taking user input from the cilent. There was work arounds but in this case it would have been hard to implement many keystrokes etc. That is where hooks come into play, as they let you HOOK into the life cycle of the UI.
+
+    To use a Hook you need to do 3 things:
+        1. Define the hook
+        2. Add it to your LiveSocket
+        3. set a phx-hook tag to your UI element.
+
+        Let's try and example.
+            const PingPongHook = {
+                    addPongListener() {
+                    window.addEventListener("phx:pong", (event) => {
+                    console.log(event.type);
+                    console.log(event.detail.message)
+                    })
+                },
+                sendPing() {
+                    this.pushEvent("ping", { myVar: 1 });
+                },
+                mounted() {
+                    console.log("I'm alive!");
+                    this.addPongListener();
+                    this.sendPing();
+                },
+            };
+
+        Let's go over this, 
+
+        Now we need to add the Hook to the LiveSocket that will be found in app.js
+            let Hooks = {};
+            Hooks.PingPongHook = PingPongHook;
+            let liveSocket = new LiveSocket("/live", Socket, {
+                hooks: Hooks,
+                // params and other options
+            });
+
+        Then add the tag to the UI element that we want to use it on.
+            <div id="myDiv" phx-hook="PingPongHook" />
+            You have to add an ID to this element or so that it calls the right hook when the element changes.
+
+        Now let's create and event_handler for the "ping" event
+            def handle_event("ping", params, socket) do
+                IO.inspect("ping", label: "Event")
+                IO.inspect(params, label: "Params")
+                {:noreply, push_event(socket, "pong", %{message: "Hello there!"})
+            end
+
+        First loading the page will trigger the I'm Alive! and then sendPing() will trigger the event "ping"
+
+        "ping" will work with the event handler to add messages to the log and then push a message "Hello there!" to the page.
+    

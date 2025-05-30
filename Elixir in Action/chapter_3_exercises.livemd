@@ -1,0 +1,47 @@
+# Chapter 3 Exercises
+
+## Section
+
+```elixir
+defmodule Chapter_3 do
+  def large_lines!(path) do
+    File.stream!(path)
+    |> Stream.map(&String.trim_trailing(&1, "\n"))
+    |> Enum.filter(&(String.length(&1) > 80))
+  end
+
+  def lines_lengths!(path) do
+    File.stream!(path)
+    |> Stream.map(&String.trim_trailing(&1, "\n"))
+    |> Enum.map(&String.length(&1))
+  end
+
+  def longest_line_length!(path) do
+    File.stream!(path)
+    |> Stream.map(&String.trim_trailing(&1, "\n"))
+    |> Enum.reduce(0, fn line, longest ->
+      if String.length(line) > longest,
+        do: longest = String.length(line),
+        else: longest
+    end)
+  end
+
+  def longest_line!(path) do
+    File.stream!(path)
+    |> Stream.map(&String.trim_trailing(&1, "\n"))
+    |> Stream.reduce({"", 0}, fn line, {longest, length} ->
+      if String.length(line) > length,
+        do: {line, String.length(line)},
+        else: {longest, length}
+    end)
+  end
+
+  def words_per_line!(path) do
+    File.stream!(path)
+    |> Stream.map(&String.trim_trailing(&1, "\n"))
+    |> Stream.map(fn line ->
+      length(String.split(line))
+    end)
+  end
+end
+```

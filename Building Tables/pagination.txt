@@ -1,0 +1,48 @@
+Small Deep Dive into how Pagination Works
+    2 main functions that we need for this are:
+        limit/2 and offset/2
+
+        limit will only call the number of entrires that we specify
+        offset will tell it where to start the count think of it as the number of entires to ignore
+
+    So if we want to check page 1 with 20 entires we would:
+        page 1 - 1 = 0
+        0 times 20 is 0
+        limit(20)
+        offset(0 * 20)
+
+        page 3 - 1 = 2
+        limit(20)
+        offset(2 * 20) # starting after entry 40
+
+        Max is just a precaution so that we don't ever try and have a negative offset if somehow we send the page number of -1
+
+A Short Comparison of Offset vs Cursor Pagination
+    This above approach isn't allways the best, think about a huge database that is constantly being added to. In this case everytime that you need to do a search you have to at least check the total size and then do work to find the right offset starting location.
+
+    Add to the fact that if an person is viewing the first page and then moves to the second while a new entry that would go on the first page they might see a name that they allready saw on the first page and might confuse them.
+
+    Here is where cursor pagination comes in:
+        from(m in Meerkat,
+            where: m.id > 29,
+            order_by: [asc: :id],
+            limit: 10
+        )
+
+    that is going forward but looking back we get:
+        from(m in Meerkat,
+            where: m < ^20,
+            order_by: [desc: :id],
+            limit: 10
+        )
+        |> Repo.all()
+        |> Enum.sort_by(& &1.id, :asc)
+
+    First we get rid of all the entries after 20
+    then we reverse the order so that we get 19, 18, 17, ...
+    Then we limit the entries to only 10
+    then we put it back in order
+
+    So in this case we reduce the time it takes to get to the right place where a large offset needs it to count every row before the offset. But this relies on the fact that ID is well defined and in order in the data base if you were to use name we still would have to check every entry as they are not organized.
+
+    Also keep in mind that a user will have to go through every page to get to the 10th page, as this is dynamic and will not show all the pages at once. 
