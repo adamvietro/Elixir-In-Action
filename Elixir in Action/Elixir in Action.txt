@@ -898,7 +898,64 @@ Chapter 4 Data Abstraction (112)
                 You will need to use [] and (.) notation to get to the proper place but once there you will be able to change values. Again this is immutable so you must bind the new struct or map.
 
             Deleting an Entry
-                You will need to get to the location then Map.delete\
+                You will need to get to the location then Map.delete\2
         
         4.2.4 Iterative Updates
-            131
+            So now we want to add in a bunch of new todos in one function call. It is not that tough as long as we can set the map for the entires in one swoop. Let's use the Enum.reduce/3
+
+            We have the functionality for the add_entry/2 already we just need to keep updating the todo_list in the reduce. Remember that you can have ANYTHING for the acc.
+
+        4.2.5 Exercise: Importing from a file.
+            See the supporting page for the things that I came upwith but it works just not with the stream. 
+            Going to create a new one that will work with the stream.
+
+    4.3 Polymorphism with Protocols
+        So when building programs you will need to work with functions that will do different things based on what is passed to them this is the idea with Polymorphism. Each time you use an Enum you are asking it to look at what is being passed and then do something different.
+
+        4.3.1 Protocol Basics
+            This is a module in which you declare functions without implementing them. Let's look at the String.Chars
+                defprotocol String.Chars do
+                    def to_string(term)
+                end
+            
+            You can then pass things that can be represented as a string to this function. There are helper functions that Elixir uses as alias, like, to_string etc. What is nice about this is that it will determine the why it is run at RUNTIME.
+
+        4.3.2 Implementing Protocol
+            once you have the basic idea about how to create a protocol you can then start to work with defining what happens when you call it with different data types.
+
+            You can use the following syntax for this as well.
+                defimpl String.Chars, for: Integer do
+                    def to_string(term) do
+                        Integer.to_string(term)
+                    end
+                end
+            As you can see we are setting what the String.Chars does for the integer data type. Keep in mind that you can pass any to the for: to have a fall back function. Keep it at the end so that it doesn't get triggered at all times. Also looking below you can implement this for ANY data type.
+
+                defimpl String.Chars, for: TodoList do
+                    def to_string(_) do
+                        "#TodoList"
+                    end
+                end
+
+            What is crazy here is that you can place this anywhere in your code and it will still try to implement the things that you pass to it.
+
+        4.3.3 Built-In Protocols
+            Elixir comes with some predefined protocols. While mmany functions have some good use to change, you can do things with the Inspect!!! to change how it prints for any given type. One of the most powerful will be the Enum. These are closely related to the Collectable Protocol.
+
+            Take a look at the todo.ex and see the end. This is taking the collection protocol and making sure that when you see a TodoList and an Enum.into/1 you will go through the list and replace the simple into function with something that will add each item into your TodoList struct.
+
+    Summary
+         A module is used to create an abstraction. A module’s functions create, manip-
+        ulate, and query data. Clients can inspect the entire structure but shouldn’t rely
+        on its shape.
+         Maps can be used to group different fields together in a single structure.
+         Structs are special kinds of maps that allow you to define data abstractions
+        related to a module.
+         Polymorphism can be implemented with protocols. A protocol defines an inter-
+        face that is used by the generic logic. You can then provide specific protocol
+        implementations for a data type.
+
+Part 2 Concurrent Elixir
+    Now we get to learn about concurrency
+
+Chapter 5 Concurrency Primitives (141)

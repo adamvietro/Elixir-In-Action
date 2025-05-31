@@ -66,14 +66,30 @@ defmodule TodoList do
 end
 
 defmodule TodoList.CsvImporter do
-  def read(content) do
-    content
-    |> IO.inspect(lable: "First Read")
-    |> String.split("\n")
-    |> Enum.map(&String.split(&1, ","))
-    |> Enum.map(fn [date, title] ->
+  def read(path) do
+    path
+    |> File.stream!()
+    |> Stream.map(&String.trim_trailing(&1))
+    |> Stream.map(&String.split(&1, ","))
+    |> Stream.map(fn [date, title] ->
       %{date: Date.from_iso8601!(date), title: title}
     end)
     |> TodoList.new()
   end
+
+  defimpl Collectable, for: TodoList do
+    def into(original) do
+      {original, &into_callback/2}
+    end
+
+    defp into_callback(todo_list, {:cont, entry}) do
+      TodoList.add_entry(todo_list, entry)
+    end
+
+    defp into_callback(todo_list, :done), do: todo_list
+    defp into_callback(_todo_list, :halt), do: :ok
+  end
 end
+
+# TodoList.CsvImporter.read("todo.txt")
+# |> IO.inspect(label: "final")

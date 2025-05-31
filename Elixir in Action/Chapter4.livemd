@@ -1,0 +1,203 @@
+<!-- livebook:{"file_entries":[{"name":"todo.txt","type":"attachment"}],"persist_outputs":true} -->
+
+# Chapter 4
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.16.0"}
+])
+```
+
+## Section
+
+```elixir
+defmodule Fraction do
+  defstruct a: nil, b: nil
+
+  def new(a, b) do
+    %Fraction{a: a, b: b}
+  end
+
+  def value(%Fraction{a: a, b: b}) do
+    a / b
+  end
+
+  # value(fraction), do: fraction.a / fraction.b
+
+  def add(%Fraction{a: a1, b: b1}, %Fraction{a: a2, b: b2}) do
+    new(a1 * b2 + b1 * a2, b2 * b1)
+  end
+end
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{:module, Fraction, <<70, 79, 82, 49, 0, 0, 15, ...>>, {:add, 2}}
+```
+
+```elixir
+Fraction.new(1, 2)
+|> Fraction.add(Fraction.new(1, 4))
+|> Fraction.value()
+
+one_quarter = Fraction.new(1,4)
+
+Map.to_list(one_quarter)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+[a: 1, __struct__: Fraction, b: 4]
+```
+
+```elixir
+defmodule TodoList do
+  defstruct next_id: 1, entries: %{}
+
+  # def new(), do: %TodoList{}
+
+  def new(entries \\ []) do
+    Enum.reduce(entries, %TodoList{}, fn entry, todo_list ->
+      add_entry(todo_list, entry)
+    end)
+
+    # entires, %TodoList{}, &add_entry(&2, &1)
+    # Needs to be in this order as the lambda will pass the entry then the acc.
+  end
+
+  def add_entry(todo_list, entry) do
+    # adds the id to the entry
+    entry = Map.put(entry, :id, todo_list.next_id)
+
+    new_entries =
+      Map.put(
+        todo_list.entries,
+        todo_list.next_id,
+        entry
+      )
+
+    # adds the new entry to the todo_list
+
+    # updates the next id
+    %TodoList{todo_list | entries: new_entries, next_id: todo_list.next_id + 1}
+  end
+
+  def entries(todo_list, date) do
+    todo_list.entries
+    |> Map.values()
+    |> Enum.filter(fn entry -> entry.date == date end)
+  end
+
+  def entries(todo_list) do
+    todo_list.entries
+    |> Map.values()
+  end
+
+  def update_entries(todo_list, entry_id, updater_fun) do
+    case Map.fetch(todo_list.entries, entry_id) do
+      :error ->
+        todo_list
+
+      {:ok, old_entry} ->
+        new_entry = updater_fun.(old_entry)
+        new_entries = Map.put(todo_list.entries, new_entry.id, new_entry)
+        %TodoList{todo_list | entries: new_entries}
+    end
+  end
+
+  def delete_entry(todo_list, entry_id) do
+    case Map.fetch(todo_list.entries, entry_id) do
+      :error ->
+        IO.inspect("cant find")
+        todo_list
+
+      {:ok, _entry} ->
+        updated_entries = Map.delete(todo_list.entries, entry_id)
+        %TodoList{todo_list | entries: updated_entries}
+    end
+  end
+end
+
+defmodule TodoList.CsvImporter do
+  def read(content) do
+    content
+    |> IO.inspect(lable: "First Read")
+    |> String.split("\n")
+    |> Enum.map(&String.split(&1, ","))
+    |> Enum.map(fn [date, title] ->
+      %{date: Date.from_iso8601!(date), title: title}
+    end)
+    |> TodoList.new()
+  end
+end
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{:module, TodoList.CsvImporter, <<70, 79, 82, 49, 0, 0, 9, ...>>, {:read, 1}}
+```
+
+```elixir
+file = Kino.Input.file("Upload your file")
+```
+
+```elixir
+value = Kino.Input.read(file)
+
+path = Kino.Input.file_path(value.file_ref)
+
+content = File.read!(path)
+
+TodoList.CsvImporter.read(content)
+|> IO.inspect(label: "final output")
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+"2023-12-19,Dentist\n2023-12-20,Shopping\n2023-12-19,Movies"
+final output: %TodoList{
+  next_id: 4,
+  entries: %{
+    1 => %{id: 1, date: ~D[2023-12-19], title: "Dentist"},
+    2 => %{id: 2, date: ~D[2023-12-20], title: "Shopping"},
+    3 => %{id: 3, date: ~D[2023-12-19], title: "Movies"}
+  }
+}
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+%TodoList{
+  next_id: 4,
+  entries: %{
+    1 => %{id: 1, date: ~D[2023-12-19], title: "Dentist"},
+    2 => %{id: 2, date: ~D[2023-12-20], title: "Shopping"},
+    3 => %{id: 3, date: ~D[2023-12-19], title: "Movies"}
+  }
+}
+```
+
+```elixir
+todo_list = TodoList.new() |>
+TodoList.add_entry(%{date: ~D[2023-12-19], title: "Dentist"}) |>
+TodoList.add_entry(%{date: ~D[2023-12-20], title: "Shopping"}) |>
+TodoList.add_entry(%{date: ~D[2023-12-19], title: "Movies"})
+
+TodoList.entries(todo_list, ~D[2023-12-19])
+todo_list = TodoList.update_entries(todo_list, 2, fn entry -> %{entry | title: "theater"} end)
+
+todo_list = TodoList.delete_entry(todo_list, 3)
+
+TodoList.entries(todo_list)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+[%{id: 1, date: ~D[2023-12-19], title: "Dentist"}, %{id: 2, date: ~D[2023-12-20], title: "theater"}]
+```
