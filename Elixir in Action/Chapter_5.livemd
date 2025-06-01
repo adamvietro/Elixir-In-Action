@@ -3,5 +3,134 @@
 ## Section
 
 ```elixir
+run_query =
+  fn query_def ->
+    Process.sleep(2000)
+    "#{query_def} result"
+  end
 
+# Enum.map(
+#   1..5,
+#   fn index ->
+#     query_def = "query #{index}"
+#     run_query.(query_def)
+#   end
+# )
+
+# spawn(fn ->
+#   query_result = run_query.("query 1")
+#   IO.puts(query_result)
+# end)
+
+async_query =
+  fn query_def ->
+    spawn(fn ->
+      query_result = run_query.(query_def)
+      IO.puts(query_result)
+    end)
+  end
+
+Enum.each(1..5, &async_query.("query #{&1}"))
+```
+
+```elixir
+# send(self(), "a message")
+
+# receive do
+#   message -> IO.inspect(message)
+# end
+
+receive do
+  message -> IO.inspect(message)
+after
+  5000 -> IO.puts("message not received")
+end
+```
+
+```elixir
+# Now lets try to send a bunch of messages and send them to a unique proces
+# to collect.
+
+async_query =
+  fn query_def ->
+    # Stores the Pid in the main calling process
+    caller = self()
+
+    spawn(fn ->
+      query_result = run_query.(query_def)
+      # Sends a response
+      send(caller, {:query_result, query_result})
+    end)
+  end
+
+Enum.each(1..5, &async_query.("query #{&1}"))
+
+get_result =
+  fn ->
+    receive do
+      {:query_result, result} -> result
+    end
+  end
+
+# results = Enum.map(1..5, fn _ -> get_result.() end)
+
+1..5 # Same but with a pipeline
+|> Enum.map(&async_query.("query #{&1}"))
+|> Enum.map(fn _ -> get_result.() end)
+```
+
+```elixir
+defmodule DatabaseServer do
+  def start do
+    spawn(&loop/0)
+  end
+
+  def run_async(server_pid, query_def) do
+    send(server_pid, {:run_query, self(), query_def})
+  end
+
+  def get_result do
+    receive do
+      {:query_result, result} -> result
+    after
+      5000 -> {:error, :timeout}
+    end
+  end
+
+  defp loop do
+    receive do
+      {:run_query, caller, query_def} ->
+        query_result = run_query(query_def)
+        send(caller, {:query_result, query_result})
+    end
+
+    loop()
+  end
+
+  defp run_query(query_def) do
+    Process.sleep(2000)
+    "#{query_def} result"
+  end
+end
+```
+
+```elixir
+server_pid = DatabaseServer.start()
+
+DatabaseServer.run_async(server_pid, "query 1")
+DatabaseServer.get_result()
+```
+
+```elixir
+pool = Enum.map(1..100, fn _ -> DatabaseServer.start() end)
+
+Enum.each(
+  1..5,
+  fn query_def ->
+    server_pid = Enum.at(pool, :rand.uniform(100) - 1)
+    DatabaseServer.run_async(server_pid, query_def)
+  end
+)
+
+Enum.map(1..5, fn _ -> DatabaseServer.get_result() end)
 ```

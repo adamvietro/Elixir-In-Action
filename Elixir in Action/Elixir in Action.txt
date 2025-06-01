@@ -959,3 +959,131 @@ Part 2 Concurrent Elixir
     Now we get to learn about concurrency
 
 Chapter 5 Concurrency Primitives (141)
+    5.1 Concurrency In BEAM
+        Fault Tolerance
+        Scalability
+        Distribution
+
+        While going through this chapter be sure to understand that Process is not an OS process as they are more bulky and BEAM Process will be lighter. There is a built in event handler that takes care of the Distribution. BEAM will use as many schedulers as there are physical Cores in your machine.
+        Each Process (handled by the scheduler) take microseconds to start and has a very small memory presence. 
+    
+    5.2 Working with Processes
+        Let's assume that you want to run some long queries, that take 2 seconds a piece. IF you want to run them one after the other it should take 10 seconds.
+
+        5.2.1 Creating Processes
+            To create a process we need to use the function spawn/1, to keep track of the process that is running the spawned VM you will have a PID assigned.
+            async_query = # This function will take the param
+                fn query_def -> # Pass it here
+                    spawn(fn ->
+                    query_result = run_query.(query_def) # Then pass it here to be run with the lamda above
+                    IO.puts(query_result)
+                    end)
+                end
+
+                async_query.("query 1")
+
+            Let's take a look at this as it shows a few things that you should need to know. Looking at the comments we see that we are passing the information down through the tree and it will need to be coppied deeply as processes can't share and information.
+                Enum.each(1..5, &async_query.("query #{&1}")) # This will return all 5 at one time. because it will call the spawn 5 times asyncely.
+
+        5.2.2 Message Passing
+            There will be times that you want to do basic calculation within many processes and then pass all the data to a higher process to do the rest of the work. We will use messages here to take care of this.
+                receive do
+                    pattern_1 -> do_something
+                    pattern_2 -> do_something_else
+                end
+
+                send(pid, {:an, :arbitray, :term})
+
+            These messages will be processed in the FIFO pattern and can and will only be limited by the memory of the system. Looking at he above we can still pattern match if we want. Keep in mind that you must pattern match to the block of code and you must have a message in order for the recieve to work. There is a block that you can use to be sure that something happens:
+                receive do
+                    message -> IO.inspect(message)
+                after
+                    5000 -> IO.puts("message not received")
+                end
+
+            Recieve Behavior
+                SO there are a few cases where a failed pattern match will not fail and will not raise an error and recieve is one of them. It will simply move on to the next message and put the fail message at the end of the queue.
+                    1 Take the first message from the mailbox.
+                    2 Try to match it against any of the provided patterns, going from top to bottom.
+                    3 If a pattern matches the message, run the corresponding code.
+                    4 If no pattern matches, take the next message, and start from step 2.
+                    5 If there are no more messages in the queue, wait for a new one to arrive. When
+                    a new message arrives, start from step 2.
+                    6 If the after clause is specified and no message is matched in the given amount
+                    of time, run the code from the after block.
+
+                Remember that EVERYTHING has a return value and the recieve is no differnt it will return the last line before the end break.
+
+            Synchronous Sending
+                This uses the "Fire-and-forget" method and will not care about whether the reciever got or processed the message, in order for both parties to know what is happening you have to specify what you need. You can do it with an other send()/2 but then both parties need to know what to do as well as have a need for this.
+
+                You will need to send the caller PID in order to get a call back.
+                    send(pid, {self(), some_message}) # Self here is the PID
+                    receive do
+                        {:response, response} -> ...
+                    end
+
+            Collecting Query results
+                Now we want to store all the messages into one main process.
+                async_query =
+                    fn query_def ->
+                        caller = self() # Stores the Pid in the main calling process
+
+                        spawn(fn ->
+                        query_result = run_query.(query_def)
+                        send(caller, {:query_result, query_result}) # Sends a response
+                        end)
+                    end
+
+                Enum.each(1..5, &async_query.("query #{&1}")) # Sends the 5 messages, but nothing the main process does changes.
+
+                get_result = # Create a lambda to recieve the messages
+                    fn ->
+                        receive do
+                        {:query_result, result} -> result
+                        end
+                    end
+
+                    results = Enum.map(1..5, fn _ -> get_result.() end) # Store the messages into a list.
+
+    5.3 Stateful Server Process
+        The idea that you might want to create a long-running processe sthat can server various requests. This is stateful sever process.
+
+        5.3.1 Server Processes
+            A server process is an informal name for a process that runs for a long time (or forever). In order to achieve this you will need to raun tail recursion (to reduce the memory and CPU needed)
+
+            defmodule DatabaseServer do
+                def start do
+                    spawn(&loop/0) # Starts the process
+                end
+
+                defp loop do
+                    receive do # recieves a message
+                    ...
+                    end
+
+                    loop() # Continues the loop.
+                end
+
+                ...
+            end
+
+            It is standard to put the entire code for the process into it's own module and have 2 types of functions within:
+                interface (public) and implementations (private) I will put the code here as well but make sure to check out the addtional Chapter 5 livebook. Things to keep in mind is that you want to wrap all the message passing within helper functions that will make sure that the cilent will not see all the way you pass messages. You will also want to wrap any query so that you can make it easier to parse the issues that you might see within the code.
+
+            Server Processes are Sequentail
+                Everything within a server is done one at a time. This can be helpful if you want to understand a bug or the process. With that being said you can do more at the same time by creating a pool of processes. 
+                    pool = Enum.map(1..100, fn _ -> DatabaseServer.start() end) 
+                    # This will create a list of 100 process (with PID) stored so you can accesss any of them
+
+                    You then need to pick a process to do the work. 
+                    Enum.each(
+                        1..5,
+                        fn query_def ->
+                            server_pid = Enum.at(pool, :rand.uniform(100) - 1)
+                            DatabaseServer.run_async(server_pid, query_def)
+                        end
+                    ) # This is not efficient as the process of choosing takes O(N) and you might send the same one more than 1
+
+        5.3.2 Keeping a Process State
+            157
