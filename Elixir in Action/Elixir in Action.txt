@@ -57,7 +57,7 @@ Chapter 2 Building Blocks (19)
 
     2.1 The Interactive Shell
         iex # starts the Interactive shell
-        Also keep in mind that everything returns a value if, whem, for, while, enum etc
+        Also keep in mind that everything returns a value if, when, for, while, enum etc
         Line breaks are the end of expression as long as they are valid that is.
         ctrl-c twice breaks the shell
 
@@ -579,7 +579,7 @@ Chapter 3 Control Flow (69)
     3.3 Conditionals
         If and Case can be used for multicase conditionals. You can also use pattern matching to get a little bit more out of your functions.
 
-        3.3.1 Braching with Multiclause Functions
+        3.3.1 Branching with Multiclause Functions
             defmodule TestList do
                 def empty?([]), do: true
                 def empty?([_|_]), do: false
@@ -591,14 +591,14 @@ Chapter 3 Control Flow (69)
                     def double(x) when is_binary(x), do: x <> x
                 end
 
-            Recersion is a great example of multicase because you can set the base case with a static param.
+            Recursion is a great example of multicase because you can set the base case with a static param.
                 defmodule Fact do
                     def fact(0), do: 1
                     def fact(n), do: n * fact(n - 1)
                 end
             Here we have the base case and then everything else falls from that. You can do a summation for a list with some of the same things.
 
-        3.3.2 Classical Braching Expressions
+        3.3.2 Classical Branching Expressions
             if, unless, cond, case are things that might be better than Multiclause as you will have to recreate the function with guards and still pass the proper param.
 
             If and Unless
@@ -1086,4 +1086,194 @@ Chapter 5 Concurrency Primitives (141)
                     ) # This is not efficient as the process of choosing takes O(N) and you might send the same one more than 1
 
         5.3.2 Keeping a Process State
-            157
+            You will need at times to keep data within the state and as such you will need to continue to pass the state with the loop here is the standard process for that:
+                def start do
+                    spawn(fn ->
+                        initial_state = ... # sets the state that will be used.
+                        loop(initial_state)
+                    end)
+                end
+                defp loop(state) do
+                    ...
+                    loop(state) # keeps the state
+                end
+
+            We can then use this to change our DatabaseServer to keep and pass a state.
+            def start do
+                spawn(fn ->
+                connection = :rand.uniform(1000)
+                loop(connection)
+                end)
+            end
+
+            after we set the loop and the start to include the state it is a simple matter to make sure the state is sent with it: 
+                In this case we are useing the start to make a connection to a random pid (not actually but pretending that)
+                Then passing the state to the loop.
+                The loop will wait for a message from a "User"
+                The user can then use the run_async to pass the pid and the "query"
+                The run_async will then send the message to the server (with the helper function) that will describe the query
+                The run_query will then do the "query" and then hold the message within the stack
+                The user can then recieve the message from the stack with the get_result 
+
+        5.3.3 Mutable State
+            We want to create a calculator that will hold the current value within the state and the a user can get to the value with a get.
+            
+            Let's look at the inner loop first
+                def loop(current_value) do
+                    new_value =
+                    receive do
+                        {:value, caller} ->
+                        send(caller, {:responce, current_value})
+
+                        {:add, value} ->
+                        current_value + value
+
+                        {:sub, value} ->
+                        current_value - value
+
+                        {:mul, value} ->
+                        current_value * value
+
+                        {:div, value} ->
+                        current_value / value
+
+                        {:clear, _} -> current_value = 0
+
+                        invalid_request ->
+                        IO.puts("invalid request: #{inspect(invalid_request)}")
+                        current_value
+                    end
+
+                    loop(new_value)
+                end
+
+            This is pretty simple as all we are doing is setting the new_value based off of what we recieved from the current state and the atom that tells us the opperation to do
+
+            Next lets set the value function. and the functions that will do the Arithmetic.
+                def value(server_pid) do
+                    send(server_pid, {:value, self()})
+
+                    recieve do
+                    {:response, value} ->
+                        value
+                    end
+                end
+
+                def add(server_pid, value), do: send(server_pid, {:add, value})
+                def sub(server_pid, value), do: send(server_pid, {:sub, value})
+                def mul(server_pid, value), do: send(server_pid, {:mul, value})
+                def div(server_pid, value), do: send(server_pid, {:div, value})
+
+            Again pretty simple as we will need a function that will send the current_value and functions that will send the right message to the server.
+
+            Now that we have this all setup we can then do something to the loop to make it more consise while adding in a help function to process the message.
+                defp loop(current_value) do
+                    new_value =
+                    receive do
+                        message -> process_message(current_value, message)
+                    end
+
+                    loop(new_value)
+                end
+                
+
+                defp process_message(current_value, {:value, caller}) do
+                    send(caller, {:responce, current_value})
+                    current_value
+                end
+
+                defp process_message(current_value, {:add, value}), do: current_value + value
+                defp process_message(current_value, {:sub, value}), do: current_value - value
+                defp process_message(current_value, {:mul, value}), do: current_value * value
+                defp process_message(current_value, {:div, value}), do: current_value / value
+                defp process_message(current_value, {:clear, value}), do: 0
+
+            This one will take the same logic for the response and turn it into one set of logic that will use the process_message to do the work
+        
+        5.3.4 Complex States
+            What if we want to keep and update a TodoList for the state of the server. First we need to put both the TodoList and the new TodoServer into the same module and then implement all the function that we need.
+
+            Keep in mind that we will need a public function that a user can use to do and action and then a private function that will pass the data and the pid so that we can add things to the stack and process them.
+                def add_entry(todo_server, new_entry) do
+                    send(todo_server, {:add_entry, new_entry})
+                end
+                ...
+                defp process_message(todo_list, {:add_entry, new_entry}) do
+                    TodoList.add_entry(todo_list, new_entry)
+                end
+            
+            Concurrent vs Functional Approach
+                You will find that in the end you will want to have a separate server for each of the instances of a data structure. That way you will be able to keep them Concurrent and be able to scale. Think of it this way you should try to model the changes to the data as a functional approach while the overlying state should be done with processes.
+
+        5.3.5 Registered Processes
+            In order to talk to an other process you will need to know the PID, so in order for process A to talk to Process B you will need to bring the PID for B to process A.
+
+             For this there is a special function under the Process module Process.register(pid, name)
+                The name can only be an atom
+                a single process can have only 1 name
+                two processe can not have the same name
+
+            Look at the Chapter5 for the livebook to see the implementations for this type of function.
+            Couple things to go over here. The Process.register(self(), :name) must be done before you spawn a new process within the start, once that is done you no longer need to pass the PID but simply pass the :name. 
+
+            If you need to kill a process you can use:
+                Process.whereis(:todo_server) |> Process.exit(:kill)
+
+            Once you start a server you will need to not try and start it again as it will have an issue with the name already being taken. While in live book I used this logic to keep it from freaking out.
+                def start do
+                    spawn(fn ->
+                    # Only register if not already taken
+                    unless Process.whereis(:todo_server) do
+                        Process.register(self(), :todo_server)
+                    end
+
+                    loop(TodoList.new())
+                    end)
+                end
+    
+    5.4 Runtime Considerations
+        Let's talk about runtime properties
+        
+        5.4.1 A Process is Sequential
+            Looking at the example you can see that you will be able to spawn the process to send messages but the single server will run into issues send responses. You can see if the number of servers was very high you would have a bottle neck. What can you do? try to optimize the response times for the single response server.
+
+        5.4.2 Unlimited Process Mailboxes
+            No lets think about the idea that a mailbox will continue to grow if the messages are not recieved or pattern matched correctly. (YOu should always have a default pattern match).
+
+            defp loop
+            receive do
+                {:message, msg} -> do_something(msg)
+                # add this to pattern match a default other -> warn_about_unknown_message(other)
+            end
+                loop()
+            end
+
+        5.4.3 Shared-Nothing Concurrency
+            Nothing is shared between processes. So when you send a message the entire thing is deep copied.
+
+        5.4.4 Scheduler Inner Workings
+            Most of the time you will have n processes and m tasks run by the n process in most cases m > n this called m:n threading. 
+
+            You will normally run process equal to the number of cores on your system but that can be changed with 
+                iex --erl "put Erlang emulator flags here"
+
+                $ iex --erl "+S 1"
+                Erlang/OTP 26 [erts-14.0] [source] [64-bit] [smp:1:1] [ds:1:1:10]
+
+                iex(1)> System.schedulers()
+                1
+
+    Summary
+     A BEAM process is a lightweight concurrent unit of execution. Processes are
+    completely isolated and share no memory.
+     Processes can communicate with asynchronous messages. Synchronous sends
+    and responses are manually built on top of this basic mechanism.
+     A server process is a process that runs for a long time (possibly forever) and
+    handles various messages. Server processes are powered by endless recursion.
+     Server processes can maintain their own private state, using the arguments of
+    endless recursion.
+
+Chapter 6 Generic Server Processes (173)
+
+    6.1 Building a Generic Server Process
+        

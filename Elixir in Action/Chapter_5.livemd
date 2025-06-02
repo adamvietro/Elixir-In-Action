@@ -3,34 +3,34 @@
 ## Section
 
 ```elixir
-run_query =
-  fn query_def ->
-    Process.sleep(2000)
-    "#{query_def} result"
-  end
-
-# Enum.map(
-#   1..5,
-#   fn index ->
-#     query_def = "query #{index}"
-#     run_query.(query_def)
+# run_query =
+#   fn query_def ->
+#     Process.sleep(2000)
+#     "#{query_def} result"
 #   end
-# )
 
-# spawn(fn ->
-#   query_result = run_query.("query 1")
-#   IO.puts(query_result)
-# end)
+# # Enum.map(
+# #   1..5,
+# #   fn index ->
+# #     query_def = "query #{index}"
+# #     run_query.(query_def)
+# #   end
+# # )
 
-async_query =
-  fn query_def ->
-    spawn(fn ->
-      query_result = run_query.(query_def)
-      IO.puts(query_result)
-    end)
-  end
+# # spawn(fn ->
+# #   query_result = run_query.("query 1")
+# #   IO.puts(query_result)
+# # end)
 
-Enum.each(1..5, &async_query.("query #{&1}"))
+# async_query =
+#   fn query_def ->
+#     spawn(fn ->
+#       query_result = run_query.(query_def)
+#       IO.puts(query_result)
+#     end)
+#   end
+
+# Enum.each(1..5, &async_query.("query #{&1}"))
 ```
 
 ```elixir
@@ -40,49 +40,52 @@ Enum.each(1..5, &async_query.("query #{&1}"))
 #   message -> IO.inspect(message)
 # end
 
-receive do
-  message -> IO.inspect(message)
-after
-  5000 -> IO.puts("message not received")
-end
+# receive do
+#   message -> IO.inspect(message)
+# after
+#   5000 -> IO.puts("message not received")
+# end
 ```
 
 ```elixir
 # Now lets try to send a bunch of messages and send them to a unique proces
 # to collect.
 
-async_query =
-  fn query_def ->
-    # Stores the Pid in the main calling process
-    caller = self()
+# async_query =
+#   fn query_def ->
+#     # Stores the Pid in the main calling process
+#     caller = self()
 
-    spawn(fn ->
-      query_result = run_query.(query_def)
-      # Sends a response
-      send(caller, {:query_result, query_result})
-    end)
-  end
+#     spawn(fn ->
+#       query_result = run_query.(query_def)
+#       # Sends a response
+#       send(caller, {:query_result, query_result})
+#     end)
+#   end
 
-Enum.each(1..5, &async_query.("query #{&1}"))
+# Enum.each(1..5, &async_query.("query #{&1}"))
 
-get_result =
-  fn ->
-    receive do
-      {:query_result, result} -> result
-    end
-  end
+# get_result =
+#   fn ->
+#     receive do
+#       {:query_result, result} -> result
+#     end
+#   end
 
-# results = Enum.map(1..5, fn _ -> get_result.() end)
+# # results = Enum.map(1..5, fn _ -> get_result.() end)
 
-1..5 # Same but with a pipeline
-|> Enum.map(&async_query.("query #{&1}"))
-|> Enum.map(fn _ -> get_result.() end)
+# 1..5 # Same but with a pipeline
+# |> Enum.map(&async_query.("query #{&1}"))
+# |> Enum.map(fn _ -> get_result.() end)
 ```
 
 ```elixir
 defmodule DatabaseServer do
   def start do
-    spawn(&loop/0)
+    spawn(fn ->
+      connection = :rand.uniform(1000)
+      loop(connection)
+    end)
   end
 
   def run_async(server_pid, query_def) do
@@ -97,40 +100,476 @@ defmodule DatabaseServer do
     end
   end
 
-  defp loop do
+  defp loop(connection) do
     receive do
       {:run_query, caller, query_def} ->
-        query_result = run_query(query_def)
+        query_result = run_query(connection, query_def)
         send(caller, {:query_result, query_result})
     end
 
-    loop()
+    loop(connection)
   end
 
-  defp run_query(query_def) do
+  defp run_query(connection, query_def) do
     Process.sleep(2000)
-    "#{query_def} result"
+    "Connection #{connection}: #{query_def} result"
   end
 end
 ```
 
 ```elixir
-server_pid = DatabaseServer.start()
+# server_pid = DatabaseServer.start()
 
-DatabaseServer.run_async(server_pid, "query 1")
-DatabaseServer.get_result()
+# DatabaseServer.run_async(server_pid, "query 1")
+# DatabaseServer.get_result()
 ```
 
 ```elixir
-pool = Enum.map(1..100, fn _ -> DatabaseServer.start() end)
+# pool = Enum.map(1..100, fn _ -> DatabaseServer.start() end)
+
+# Enum.each(
+#   1..5,
+#   fn query_def ->
+#     server_pid = Enum.at(pool, :rand.uniform(100) - 1)
+#     DatabaseServer.run_async(server_pid, query_def)
+#   end
+# )
+
+# Enum.map(1..5, fn _ -> DatabaseServer.get_result() end)
+
+server_pid = DatabaseServer.start()
+DatabaseServer.run_async(server_pid, "query 1")
+DatabaseServer.get_result()
+
+DatabaseServer.run_async(server_pid, "query 2")
+DatabaseServer.get_result()
+
+```
+
+```elixir
+# Passing a state with the loop 
+# def start do
+#   spawn(fn ->
+#     initial_state = ...
+#     loop(initial_state)
+#   end)
+# end
+
+# defp loop(state) do
+#   ...
+#   loop(state)
+# end
+```
+
+```elixir
+# Mutable state
+# defp loop(state) do
+#   new_state = # Sets the new state based off the message
+#     receive do
+#       msg1 ->
+#         ...
+
+#       msg2 ->
+#         ...
+#     end
+
+#   loop(new_state) # makes sure to pass the new state to the loop
+# end
+```
+
+```elixir
+defmodule Calculator do
+  @moduledoc """
+  This module will start a new calculator that will hold the current value
+  for any arithmetic expression and value you send to it.
+
+  iex(1)> calculator_pid = Calculator.start()
+  iex(2)> Calculator.value(calculator_pid)
+  0
+  iex(3)> Calculator.add(calculator_pid, 10)
+  iex(4)> Calculator.sub(calculator_pid, 5)
+  iex(5)> Calculator.mul(calculator_pid, 3)
+  iex(6)> Calculator.div(calculator_pid, 5)
+  iex(7)> Calculator.value(calculator_pid)
+  3.0
+  iex(8)> Calculator.clear(calculator_pid)
+  iex(9)> Calculator.value(calculator_pid)
+  0
+  """
+
+  def start do
+    spawn(fn ->
+      loop(0)
+    end)
+  end
+
+  def value(server_pid) do
+    send(server_pid, {:value, self()})
+
+    receive do
+      {:response, value} ->
+        value
+    end
+  end
+
+  def add(server_pid, value), do: send(server_pid, {:add, value})
+  def sub(server_pid, value), do: send(server_pid, {:sub, value})
+  def mul(server_pid, value), do: send(server_pid, {:mul, value})
+  def div(server_pid, value), do: send(server_pid, {:div, value})
+  def clear(server_pid), do: send(server_pid, {:clear})
+
+  defp loop(current_value) do
+    new_value =
+      receive do
+        message -> process_message(current_value, message)
+      end
+
+    loop(new_value)
+  end
+
+  defp process_message(current_value, {:value, caller}) do
+    send(caller, {:response, current_value})
+    current_value
+  end
+
+  defp process_message(current_value, {:add, value}), do: current_value + value
+  defp process_message(current_value, {:sub, value}), do: current_value - value
+  defp process_message(current_value, {:mul, value}), do: current_value * value
+  defp process_message(current_value, {:div, value}), do: current_value / value
+  defp process_message(_current_value, {:clear}), do: 0
+
+  # defp loop(current_value) do
+  #   new_value =
+  #     receive do
+  #       {:value, caller} ->
+  #         send(caller, {:responce, current_value})
+
+  #       {:add, value} ->
+  #         current_value + value
+
+  #       {:sub, value} ->
+  #         current_value - value
+
+  #       {:mul, value} ->
+  #         current_value * value
+
+  #       {:div, value} ->
+  #         current_value / value
+
+  #       {:clear, _} ->
+  #         current_value = 0
+
+  #       invalid_request ->
+  #         IO.puts("invalid request: #{inspect(invalid_request)}")
+  #         current_value
+  #     end
+
+  #   loop(new_value)
+  # end
+end
+```
+
+```elixir
+# Let's talk about a more complex state. Let's keep track of a TodoList.
+defmodule TodoList do
+  defstruct next_id: 1, entries: %{}
+
+  # def new(), do: %TodoList{}
+
+  def new(entries \\ []) do
+    Enum.reduce(entries, %TodoList{}, fn entry, todo_list ->
+      add_entry(todo_list, entry)
+    end)
+
+    # entires, %TodoList{}, &add_entry(&2, &1)
+    # Needs to be in this order as the lambda will pass the entry then the acc.
+  end
+
+  def add_entry(todo_list, entry) do
+    # adds the id to the entry
+    entry = Map.put(entry, :id, todo_list.next_id)
+
+    new_entries =
+      Map.put(
+        todo_list.entries,
+        todo_list.next_id,
+        entry
+      )
+
+    # adds the new entry to the todo_list
+
+    # updates the next id
+    %TodoList{todo_list | entries: new_entries, next_id: todo_list.next_id + 1}
+  end
+
+  def entries(todo_list, date) do
+    todo_list.entries
+    |> Map.values()
+    |> Enum.filter(fn entry -> entry.date == date end)
+  end
+
+  def entries(todo_list) do
+    todo_list.entries
+    |> Map.values()
+  end
+
+  def update_entries(todo_list, entry_id, updater_fun) do
+    case Map.fetch(todo_list.entries, entry_id) do
+      :error ->
+        todo_list
+
+      {:ok, old_entry} ->
+        new_entry = updater_fun.(old_entry)
+        new_entries = Map.put(todo_list.entries, new_entry.id, new_entry)
+        %TodoList{todo_list | entries: new_entries}
+    end
+  end
+
+  def delete_entry(todo_list, entry_id) do
+    case Map.fetch(todo_list.entries, entry_id) do
+      :error ->
+        IO.inspect("cant find")
+        todo_list
+
+      {:ok, _entry} ->
+        updated_entries = Map.delete(todo_list.entries, entry_id)
+        %TodoList{todo_list | entries: updated_entries}
+    end
+  end
+end
+```
+
+```elixir
+defmodule TodoServer do
+  @moduledoc """
+  This will be used to have a server that will take and process TodoList items. 
+  """
+  def start do
+    spawn(fn -> loop(TodoList.new()) end)
+  end
+
+  def loop(todo_list) do
+    new_todo_list =
+      receive do
+        message -> process_message(todo_list, message)
+      end
+
+    loop(new_todo_list)
+  end
+
+  def entries(todo_server) do
+    send(todo_server, {:entries, self()})
+
+    receive do
+      {:todo_entires, entries} -> entries
+    after
+      5000 -> {:error, :timeout}
+    end
+  end
+
+  def entries(todo_server, date) do
+    send(todo_server, {:entries, self(), date})
+
+    receive do
+      {:todo_entires, entries} -> entries
+    after
+      5000 -> {:error, :timeout}
+    end
+  end
+
+  def add_entry(todo_server, new_entry) do
+    send(todo_server, {:add_entry, new_entry})
+  end
+
+  defp process_message(todo_list, {:entries, caller, date}) do
+    send(caller, {:todo_entires, TodoList.entries(todo_list, date)})
+    todo_list
+  end
+
+  defp process_message(todo_list, {:entries, caller}) do
+    send(caller, {:todo_entires, TodoList.entries(todo_list)})
+    todo_list
+  end
+
+  defp process_message(todo_list, {:add_entry, new_entry}) do
+    TodoList.add_entry(todo_list, new_entry)
+  end
+end
+```
+
+```elixir
+todo_server = TodoServer.start()
+
+TodoServer.add_entry(
+  todo_server,
+  %{date: ~D[2023-12-19], title: "Dentist"}
+)
+
+TodoServer.add_entry(
+  todo_server,
+  %{date: ~D[2023-12-20], title: "Shopping"}
+)
+
+TodoServer.add_entry(
+  todo_server,
+  %{date: ~D[2023-12-19], title: "Movies"}
+)
+
+TodoServer.entries(todo_server, ~D[2023-12-19])
+
+[
+  %{date: ~D[2023-12-19], id: 3, title: "Movies"},
+  %{date: ~D[2023-12-19], id: 1, title: "Dentist"}
+]
+
+TodoServer.entries(todo_server)
+```
+
+```elixir
+# What happens when you are not using a single processe and you need 
+# to talk to others. Ypu can use...
+# Process.register(self(), :some_name)
+# send(:some_name, :msg)
+
+# receive do
+#   msg -> IO.puts("received #{msg}")
+# end
+
+# received msg
+```
+
+```elixir
+defmodule TodoServer.PIDLess do
+  @moduledoc """
+  This will be used to have a server that will take and process TodoList items. 
+  """
+  def start do
+    spawn(fn ->
+      # Only register if not already taken
+      unless Process.whereis(:todo_server) do
+        Process.register(self(), :todo_server)
+      end
+
+      loop(TodoList.new())
+    end)
+  end
+
+  def loop(todo_list) do
+    new_todo_list =
+      receive do
+        message -> process_message(todo_list, message)
+      end
+
+    loop(new_todo_list)
+  end
+
+  def clear do
+    send(:todo_server, {:clear})
+  end
+
+  def entries do
+    send(:todo_server, {:entries, self()})
+
+    receive do
+      {:todo_entires, entries} -> entries
+    after
+      5000 -> {:error, :timeout}
+    end
+  end
+
+  def entries(date) do
+    send(:todo_server, {:entries, self(), date})
+
+    receive do
+      {:todo_entires, entries} -> entries
+    after
+      5000 -> {:error, :timeout}
+    end
+  end
+
+  def add_entry(new_entry) do
+    send(:todo_server, {:add_entry, new_entry})
+  end
+
+  defp process_message(_todo_list, {:clear}) do
+    TodoList.new()
+  end
+
+  defp process_message(todo_list, {:entries, caller, date}) do
+    send(caller, {:todo_entires, TodoList.entries(todo_list, date)})
+    todo_list
+  end
+
+  defp process_message(todo_list, {:entries, caller}) do
+    send(caller, {:todo_entires, TodoList.entries(todo_list)})
+    todo_list
+  end
+
+  defp process_message(todo_list, {:add_entry, new_entry}) do
+    TodoList.add_entry(todo_list, new_entry)
+  end
+end
+```
+
+```elixir
+# here is the use of the TodoServer.PIDLess
+TodoServer.PIDLess.start()
+TodoServer.PIDLess.add_entry(%{date: ~D[2023-12-19], title: "Dentist"})
+TodoServer.PIDLess.add_entry(%{date: ~D[2023-12-20], title: "Shopping"})
+TodoServer.PIDLess.add_entry(%{date: ~D[2023-12-19], title: "Movies"})
+TodoServer.PIDLess.add_entry(%{date: ~D[2023-12-19], title: "Dentist"})
+TodoServer.PIDLess.add_entry(%{date: ~D[2023-12-20], title: "Shopping"})
+TodoServer.PIDLess.add_entry(%{date: ~D[2023-12-19], title: "Movies"})
+TodoServer.PIDLess.add_entry(%{date: ~D[2023-12-19], title: "Dentist"})
+TodoServer.PIDLess.add_entry(%{date: ~D[2023-12-20], title: "Shopping"})
+TodoServer.PIDLess.add_entry(%{date: ~D[2023-12-19], title: "Movies"})
+TodoServer.PIDLess.entries()
+|> IO.inspect(label: "Full list")
+
+TodoServer.PIDLess.clear()
+TodoServer.PIDLess.entries()
+```
+
+```elixir
+defmodule Server do
+  @moduledoc """
+  This is a very slow response server look at the response times in the cell below
+  """
+  def start do
+    spawn(fn -> loop() end)
+  end
+
+  def send_msg(server, message) do
+    send(server, {self(), message})
+
+    receive do
+      {:response, response} -> response
+    end
+  end
+
+  defp loop do
+    receive do
+      {caller, msg} ->
+        Process.sleep(1000)
+        send(caller, {:response, msg})
+    end
+
+    loop()
+  end
+end
+```
+
+```elixir
+server = Server.start()
 
 Enum.each(
   1..5,
-  fn query_def ->
-    server_pid = Enum.at(pool, :rand.uniform(100) - 1)
-    DatabaseServer.run_async(server_pid, query_def)
+  fn i ->
+    spawn(fn ->
+      IO.puts("Sending msg ##{i}")
+      response = Server.send_msg(server, i)
+      IO.puts("Response: #{response}")
+    end)
   end
 )
-
-Enum.map(1..5, fn _ -> DatabaseServer.get_result() end)
 ```
