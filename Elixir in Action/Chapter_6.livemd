@@ -1,0 +1,219 @@
+# Chapter 6
+
+## Section
+
+```elixir
+defmodule ServerProcess do
+  def start(callback_module) do
+    spawn(fn ->
+      initial_state = callback_module.init()
+      loop(callback_module, initial_state)
+    end)
+  end
+
+  defp loop(callback_module, current_state) do
+    receive do
+      {:call, request, caller} ->
+        {response, new_state} =
+          callback_module.handle_call(
+            request,
+            current_state
+          )
+
+        send(caller, {:response, response})
+        loop(callback_module, new_state)
+
+      {:cast, request} -> # This is the new line for :cast
+        new_state =
+          callback_module.handle_cast(
+            request,
+            current_state
+          )
+
+        loop(callback_module, new_state)
+    end
+  end
+
+  def call(server_pid, request) do
+    send(server_pid, {:call, request, self()})
+
+    receive do
+      {:response, response} ->
+        response
+    end
+    # ServerProcess.call(pid, {:entries, date})
+  end
+
+  def cast(server_pid, request) do # This is the new helper function for :cast
+    send(server_pid, {:cast, request})
+    # don't need the caller as there is no response
+  end
+end
+```
+
+```elixir
+defmodule KeyValueStore do
+  def init do
+    # You only need to have a final line that is the data storage for the state.
+    %{}
+  end
+
+  def start do
+    ServerProcess.start(KeyValueStore)
+  end
+
+  def put(pid, key, value) do
+    ServerProcess.cast(pid, {:put, key, value}) # Changed call to cast 
+  end
+
+  def get(pid, key) do
+    ServerProcess.call(pid, {:get, key})
+  end
+
+  def handle_cast({:put, key, value}, state) do # Implemetation for the cast.
+    Map.put(state, key, value)
+  end
+
+  def handle_call({:put, key, value}, state) do
+    # second param is the state after the pass
+    {:ok, Map.put(state, key, value)}
+  end
+
+  def handle_call({:get, key}, state) do
+    # first value can be the response
+    {Map.get(state, key), state}
+  end
+end
+```
+
+```elixir
+# if ServerProcess.where_is(pid), do: "", else: pid = ServerProcess.start(KeyValueStore)
+
+# pid = ServerProcess.start(KeyValueStore)
+
+# ServerProcess.call(pid, {:put, :some_key, :some_value})
+# ServerProcess.call(pid, {:get, :some_key})
+```
+
+```elixir
+# Now we can use the KeyValueStore
+# pid = KeyValueStore.start()
+
+# KeyValueStore.put(pid, :some_key, :some_value)
+# :ok
+# KeyValueStore.get(pid, :some_key)
+```
+
+```elixir
+# The diffence here is that there is no response for the put.
+pid = KeyValueStore.start()
+KeyValueStore.put(pid, :some_key, :some_value)
+KeyValueStore.get(pid, :some_key)
+```
+
+```elixir
+defmodule TodoList do
+  defstruct next_id: 1, entries: %{}
+
+  # def new(), do: %TodoList{}
+
+  def new(entries \\ []) do
+    Enum.reduce(entries, %TodoList{}, fn entry, todo_list ->
+      add_entry(todo_list, entry)
+    end)
+
+    # entires, %TodoList{}, &add_entry(&2, &1)
+    # Needs to be in this order as the lambda will pass the entry then the acc.
+  end
+
+  def add_entry(todo_list, entry) do
+    # adds the id to the entry
+    entry = Map.put(entry, :id, todo_list.next_id)
+
+    new_entries =
+      Map.put(
+        todo_list.entries,
+        todo_list.next_id,
+        entry
+      )
+
+    # adds the new entry to the todo_list
+
+    # updates the next id
+    %TodoList{todo_list | entries: new_entries, next_id: todo_list.next_id + 1}
+  end
+
+  def entries(todo_list, date) do
+    todo_list.entries
+    |> Map.values()
+    |> Enum.filter(fn entry -> entry.date == date end)
+  end
+
+  def entries(todo_list) do
+    todo_list.entries
+    |> Map.values()
+  end
+
+  def update_entries(todo_list, entry_id, updater_fun) do
+    case Map.fetch(todo_list.entries, entry_id) do
+      :error ->
+        todo_list
+
+      {:ok, old_entry} ->
+        new_entry = updater_fun.(old_entry)
+        new_entries = Map.put(todo_list.entries, new_entry.id, new_entry)
+        %TodoList{todo_list | entries: new_entries}
+    end
+  end
+
+  def delete_entry(todo_list, entry_id) do
+    case Map.fetch(todo_list.entries, entry_id) do
+      :error ->
+        IO.inspect("cant find")
+        todo_list
+
+      {:ok, _entry} ->
+        updated_entries = Map.delete(todo_list.entries, entry_id)
+        %TodoList{todo_list | entries: updated_entries}
+    end
+  end
+end
+```
+
+```elixir
+defmodule TodoServer do
+  @moduledoc """
+  This will be used to have a server that will take and process TodoList items. 
+  """
+  def start do
+    ServerProcess.start(TodoServer)
+  end
+
+  def add_entry(todo_server, new_entry) do
+    ServerProcess.cast(todo_server, {:add_entry, new_entry})
+  end
+
+  def entries(todo_server, date) do
+    ServerProcess.call(todo_server, {:entries, date})
+  end
+
+  def init do
+    TodoList.new()
+  end
+
+  def handle_cast({:add_entry, new_entry}, todo_list) do
+    TodoList.add_entry(todo_list, new_entry)
+  end
+
+  def handle_call({:entries, date}, todo_list) do
+    {TodoList.entries(todo_list, date), todo_list}
+  end
+end
+```
+
+```elixir
+pid = TodoServer.start()
+
+TodoServer.add_entry(pid, %{date: ~D[2023-12-20], title: "Shopping"})
+TodoServer.entries(pid, ~D[2023-12-20])
+```

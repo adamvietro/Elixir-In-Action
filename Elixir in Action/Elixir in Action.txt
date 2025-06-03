@@ -1274,6 +1274,77 @@ Chapter 5 Concurrency Primitives (141)
     endless recursion.
 
 Chapter 6 Generic Server Processes (173)
-
+    Let's learn about OTP (Open Telcecom Platform)
+    
     6.1 Building a Generic Server Process
+        Here we want to:
+            spawn a separate process
+            Run an infinite Loops
+            Maintain a process state
+            react to messages
+            send a response back to the caller
+
+        6.1.1 Plugging in with modules
+            Generic code vs the concrete version you will end up with. In order to do this you will use modules. Remember that a module name is an atom and as such you can bind it to a variable and use the variable to call it.
+
+            some_module = IO
+            some_module.puts("hello")
+
+        6.1.2 Implemeting the Generic Code
+            With the code in the livebook Chapter_6 we have the star that will use the init. 
+            then start the loop
+            the return value of the spawn will be a pid.
+
+            With the loop implemente we can go over it.
+                The loop waits for a message of the format {request, caller}
+                Then sends the response to the caller
+                then restarts the loop.
+
+            Now we need to be able to send a request to the server (as a user they will need to use a call/2 function). We use call in this case as we want to recieve a response.
         
+        6.1.3 Using the Generic Abstration
+            Now that we have the server setup you want to be able to have a callback function that will handle the data that we send and recieve.
+
+            Now we can further obfiscate the process by adding in more helper functions. We are trying to remove the user knowing anything about the server. In this case we want to only have the KeyValueStore as the user interface. 
+
+            Now we can use start/0 put/3 and get/2
+                KeyValueStore.start()/0
+                So the KeyValueStore will start a new Process
+                
+                Then the KeyValueStore.put()/3:
+                will call ServerProcess.call()
+                Then it will send a call to ServerProcess that will be of the form {request, caller(self())}
+                The loop will recive that and send the request to the KeyValueStore using handle_call()/2
+                It will process the :put from the list of handle call
+                Which will {:ok, Map.put}
+                
+                Then when we use the KeyValueStore.get()/2:
+                invoking the get from KeyValueStore
+                which calls the ServerProcess PID with {:get, key}
+                which sends the request (:get) to the ServerProcess
+                The loop takes over and then sends that request (:get) to the callback function
+                which then will {Map.get(state, key), state}
+
+        6.1.4 Supporting asynchronous Requests
+            Call is used for Synchronous requests as it wants a response, cast is used when we don't need a response.
+            We added an extra bit to the send message and the call as now we need to be able to handle a call or a cast
+
+        6.1.5 Exercise: Refactoring the Todo-Server
+            Okay so let's go over this as it was abit of a strugle to figure this whole thing out. 
+            First we wanted to start a ServerProcess with the TodoServer
+
+            Second we needed to create 2 functions that will do the work for each action that we want handled.
+            get() (entries)
+                this will make the call to the Server that will ask for the entries that match the date.
+            handle_call ({:entries, date}, state) 
+                This will actually take the todo_list and perform the action
+
+            put() (add_entries)
+                This will make the call to the server that will do the work on the state
+            handle_cast({:add_entries, entries}, state)
+                This will actually perform the action to the state and update it.
+
+            We wanted to keep as much of the underlying support awawy from the user so we need helper functions for each step
+    
+    6.2 Using GenServer
+        180
