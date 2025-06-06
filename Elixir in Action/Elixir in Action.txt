@@ -1347,4 +1347,97 @@ Chapter 6 Generic Server Processes (173)
             We wanted to keep as much of the underlying support awawy from the user so we need helper functions for each step
     
     6.2 Using GenServer
-        180
+        Here are some of the benefits of a GenServer:
+            Support for calls and casts
+            Customizable timeouts for calls
+            Progagation of server process crashes
+            Support for Distributed Systems
+
+        6.2.1 OTP Behavior
+            Behaviour is generic code that implements a common pattern. 
+            Here are some of the standard libraries for Behaviour in OTP:
+                 gen_server—Generic implementation of a stateful server process
+                 supervisor—Provides error handling and recovery in concurrent systems
+                 application—Generic implementation of components and libraries
+                 gen_event—Provides event-handling support
+                 gen_statem—Runs a finite state machine in a stateful server process
+
+        6.2.2 Plugging into GenServer
+            When we: use GenServer, there is functions that are injected into the module from compliation. 
+
+        6.2.3 Handling Requests
+            Now we want to implment the same server using GenServer (See livebook)
+            Couple things to go over:
+                init takes 1 arguement and it is the second param of the GenServer.start/2
+                init requires the last line to be of the form {:ok, initial_state}
+                handle_cast needs to be of the form {:noreply, new_state}
+                handle_call needs to be of the form {:reply, response, new_state}
+                    response is usually a tuple with ID and and the PID of the caller.
+
+            With the general boilerplate out of the way we need to define the helper functions to allow a user to send and recieve messages.
+
+        6.2.4 Handling Plain Messags
+            Messages contain more than just the message they also include some payload to know what to do.
+            :timer.send_interval/2 can send a message every x miliseconds this will highjack the handle_info/2 callback to take care of its internals.
+
+        6.2.5 Other GenServer Features
+            Here are a few things to go over before we dive deeper
+                Compile-Time Checking
+                    So when you are building things in GenServer you might find that you are not using the correct version of the function that you are defining. As such if you are about to define a needed function you should denote that its is an @impl which denotes that you are defining a callback function (needed function).
+
+                Name Registration
+                    When starting a Genserver it might be helpful to define a name for the process. GenServer.start/3 can help here.
+                    GenServer.start(
+                        CallbackModule,
+                        init_param,
+                        name: :some_name
+                    )
+
+                    there is also the option of using __MODULE__ in place of :some_name as it will just use the module as the name and you can just use __MODULE__ for any time you would use a PID.
+
+                Stopping the Server
+                     {:ok, initial_state} from init/1
+                     {:reply, response, new_state} from handle_call/3
+                     {:noreply, new_state} from handle_cast/2 and handle_info/2
+
+                    So if you want to stop the server you can run GenServer.stop/2 or you can set as the last result of a call to be {:stop, reason, new_state} (cast) or {:stop, response, reason, new_state} (call)
+
+        6.2.6 Process Life Cycle
+            It is important to know what is happening withint the process of the GenServer. 
+            Client starts with init 
+            GenServer init -> init
+            Server starts loop
+
+            Client call/cast ect.
+
+            Loop send call to the right functions
+
+            Repeat till end of time or terminate
+
+        6.2.7 OTP-Compliant Processes
+            Once you start to build production level code you should avoid spawn and use child parent versions that will be able to deal with some fault tolerance.
+
+    Exercise 6.2.8 GenServer-Powered to-do Server
+        See Livebook
+
+    Summary
+         A generic server process is an abstraction that implements tasks common to any
+        kind of server process, such as recursion-powered looping and message passing.
+         A generic server process can be implemented as a behaviour. A behaviour
+        drives the process, whereas specific implementations can plug into the
+        behaviour via callback modules.
+         The behaviour invokes callback functions when the specific implementation
+        needs to make a decision.
+         GenServer is a behaviour that implements a generic server process.
+         A callback module for GenServer must implement various functions. The most
+        frequently used of these are init/1, handle_cast/2, handle_call/3, and
+        handle_info/2.
+         You can interact with a GenServer process with the GenServer module.
+         Two types of requests can be issued to a server process: calls and casts.
+         A cast is a fire-and-forget type of request—a caller sends a message and immedi-
+        ately moves on to do something else.
+         A call is a synchronous send-and-respond request—a caller sends a message and
+        waits until the response arrives, the timeout occurs, or the server crashes.
+
+
+Chapter 7 Building a Concurrent System (192)

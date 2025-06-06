@@ -217,3 +217,93 @@ pid = TodoServer.start()
 TodoServer.add_entry(pid, %{date: ~D[2023-12-20], title: "Shopping"})
 TodoServer.entries(pid, ~D[2023-12-20])
 ```
+
+```elixir
+# Using GenServer this and the next cell are just to see the functions that
+# use GenServer inject.
+defmodule KeyValueStore.GenServer do
+  use GenServer
+
+  def start do
+    GenServer.start(KeyValueStore.GenServer, nil, name: :keyvalue)
+  end
+
+  def put(entries) do
+    GenServer.cast(:keyvalue, {:put, entries})
+  end
+
+  def get(date) do
+    GenServer.call(:keyvalue, {:get, date})
+  end
+
+  def delete(id) do
+    GenServer.cast(:keyvalue, {:delete, id})
+  end
+
+  def init(_) do
+    {:ok, TodoList.new()}
+  end
+
+  def handle_cast({:delete, id}, state) do
+    {:no_reply, TodoList.delete_entry(state, id)}
+  end
+
+  def handle_cast({:put, entries}, state) do
+    {:noreply, TodoList.add_entry(state, entries)}
+  end
+
+  def handle_call({:get, key}, _, state) do
+    {:reply, TodoList.entries(state, key), state}
+  end
+end
+```
+
+```elixir
+{:ok, pid} = KeyValueStore.GenServer.start()
+
+KeyValueStore.GenServer.put(%{date: ~D[2023-12-20], title: "Shopping"})
+
+KeyValueStore.GenServer.get(~D[2023-12-20])
+
+# KeyValueStore.GenServer.delete(1)
+
+KeyValueStore.GenServer.get(~D[2023-12-20])
+```
+
+```elixir
+# KeyValueStore.GenServer.__info__(:functions)
+# Great little bit of info to use the __info__/1 to get info about...
+```
+
+```elixir
+# {:ok, pid} = KeyValueStore.GenServer.start()
+
+# KeyValueStore.GenServer.put(pid, :some_key, :some_value)
+
+# KeyValueStore.GenServer.get(pid, :some_key)
+```
+
+```elixir
+# little test with the :timer.send_interval/2
+# defmodule KeyValueStore.Timer do
+#   use GenServer
+
+#   def init(_) do
+#     :timer.send_interval(5000, :cleanup)
+#     {:ok, %{}}
+#   end
+
+#   def handle_info(:cleanup, state) do
+#     IO.puts("performing cleanup...")
+#     {:noreply, state}
+#   end
+# end
+```
+
+```elixir
+# {_, pid} = GenServer.start(KeyValueStore.Timer, nil, name: :some_name)
+```
+
+```elixir
+# GenServer.stop(:some_name)
+```
