@@ -3,15 +3,15 @@ Chapter 1 First Steps (3)
         
         1.1.1 High Availability
 
-        1.1.2 Erland concurrency
+        1.1.2 Erlang concurrency
             Fault Tolerance
             Scalability
             Distribution
-            Reposonsiveness
+            Responsiveness
 
         1.1.3 Server-side Systems
 
-        1.1.4 The Development Plaform
+        1.1.4 The Development Platform
             Open Telecom Platform:
                 concurrency and Distribution patterns
                 Error Detection and recovery
@@ -22,12 +22,12 @@ Chapter 1 First Steps (3)
         1.1.5 Relationship to Microservices
             A Service for this section is a part of the system running in a separate OS
             With this we can distribute the service to many different machine and then avoid the entire machine going down when 1 fails.
-            One of the issues arisses when you want to completely separate the service, you might still have issues with keeping it completely separate.
+            One of the issues arises when you want to completely separate the service, you might still have issues with keeping it completely separate.
         
     1.2 About Elixir
 
-        1.2.1 Code Simplifaction
-            One of the benifits from Erlang to Elixir if the reduction of boiler plate code that doesnt need to be there.
+        1.2.1 Code Simplification
+            One of the benefits from Erlang to Elixir if the reduction of boiler plate code that doesn't need to be there.
                 defmodule SumServer do
                     use GenServer
                     def start do
@@ -41,8 +41,8 @@ Chapter 1 First Steps (3)
                     end
                 end
 
-        1.2.2 Compsing Functions
-            Pipe Opperator is the glue that takes one form of data and can turn it into an other type or style.
+        1.2.2 Composing Functions
+            Pipe Operator is the glue that takes one form of data and can turn it into an other type or style.
 
         1.2.3 The Big Picture
 
@@ -63,14 +63,14 @@ Chapter 2 Building Blocks (19)
 
     2.2 Working with variables
         Elixir uses dynamic bindings
-        Only use losercase letters with underscores for more than 1 word varibales
+        Only use lowercase letters with underscores for more than 1 word variables
         Remember that you are not mutating a variable you are creating a new variable and rebinding the location.
 
     2.3 Organizing your Code
         Use many small functions
 
         2.3.1 Modules
-             A module is a colection of functions 
+             A module is a collection of functions 
 
              To define a module you will need to to use the defmodule Name do
              To use the module you can type everything into the shell or use:
@@ -84,28 +84,28 @@ Chapter 2 Building Blocks (19)
 
             defmodule and def are MACROS
 
-            You can omit the parenthsis when calling a function buts its not recommended
+            You can omit the parenthesis when calling a function buts its not recommended
 
-            |> Pipe Opperator will place the output of the previous function into the FIRST param of the next
+            |> Pipe Operator will place the output of the previous function into the FIRST param of the next
 
         2.3.3 Function Arity
             This is the number of arguments a function will take. You can use the \\ to define default values for a param
         
-        2.3.4 Function Visiblity
+        2.3.4 Function Visibility
             Functions are by default exported unless you use the defp macro
         
         2.3.5 Imports and Aliases
             import # This will allow you to import other modules into your code.
             alias mod, as: MyIO # This will import a new module but give it a nickname
 
-            If you dont use the syntax , as: ... 
+            If you don't use the syntax , as: ... 
             whatever you have after a . will be used.
         
         2.3.6 Module Attributes
             @pi some_info
-            @raduis 2
+            @radius 2
 
-            These can be used as compile-time constants and can be refrenced with 
+            These can be used as compile-time constants and can be referenced with 
             @pi
 
             @moduledoc and @doc can be used to fetch docs for the functions if you create and use them
@@ -129,7 +129,7 @@ Chapter 2 Building Blocks (19)
         2.4.2 Atoms
             These are literally named constants
             You can use spaces as such :"an atom with spaces"
-            What is nice about atoms is that they are just kept within a atom table so you can keep the reasources low
+            What is nice about atoms is that they are just kept within a atom table so you can keep the resources low
 
             Aliases
                 Using an uppercase letter to start will create an atom as well
@@ -153,17 +153,17 @@ Chapter 2 Building Blocks (19)
 
                 SO you can string || to get any value that any value that exists
 
-                Or you an string && to check if the first value is true and retrive the second
+                Or you an string && to check if the first value is true and retrieve the second
         
         2.4.3 Tuples
             To access a tuples element you can use elem(tuple, 1) # where the tuple is a tuple and the 1 is the index of the tuple you want.
 
             put_elem(tuple, index, value)
 
-            Remember that you will never modify anything in Elixir you must always redifine the variable or pass the new one on
+            Remember that you will never modify anything in Elixir you must always redefine the variable or pass the new one on
 
         2.4.4 Lists
-            Keep in mind that it is easy to retieve the first element of a list and harder for the next and so on. It is a value and a refrence to the next element in the list.
+            Keep in mind that it is easy to retrieve the first element of a list and harder for the next and so on. It is a value and a reference to the next element in the list.
 
             One of the basic ways to get an element is to use the Enum.at(list, index)
 
@@ -179,20 +179,20 @@ Chapter 2 Building Blocks (19)
                 There is a great way to think about lists and that is with the head/tail representation
 
                 list = [head | tail] # with this head is a single element and tail is the rest 
-                list = [head | second | tail] # same with this head= single secong = single tail = rest
+                list = [head | second | tail] # same with this head = single second = single tail = rest
 
-                Think of lists as pais, and element and a list, if you want to not use the above syntax you can use hd() or tl() # head or tail in this case
+                Think of lists as pairs, and element and a list, if you want to not use the above syntax you can use hd() or tl() # head or tail in this case
 
         2.4.5 Immutability
-            Remember that elixir is immutable so you must always rebind a vaiable
+            Remember that elixir is immutable so you must always rebind a variable
 
             Modifying Tuples
-                Modifying a tuple or anything really will create a shallow copy of the first bit of data and then do the work to it, if you rebind it the old data wont have a reference and be dealt with by the garbabe collector after the opperation.
+                Modifying a tuple or anything really will create a shallow copy of the first bit of data and then do the work to it, if you rebind it the old data wont have a reference and be dealt with by the garbage collector after the operation.
             
             Modifying Lists
                 So for lists you will create a shallow copy of the list up to the element that you want to change and the rest of the list will not be changed or copied as any lists is just element and a reference to the rest of the list.
 
-            Benifits
+            Benefits
                 One of the best things about Immutability is that there is no side effects, IE you know what will change no matter what and if you want to change something you must implicitly do that thing.
 
                 The one thing to keep in mind is that anything that you do to other databases will be permanent
@@ -207,13 +207,13 @@ Chapter 2 Building Blocks (19)
                 squares = %{1 => 2, 2 => 4}
                 squares = Map.new([{1, 1}, {2, 2}, {3, 3}])
 
-                And then you can retieve the elements with
+                And then you can retrieve the elements with
                 squares[1] # with the value that is in the [] is the :atom/key of the element not the index
                 Map.get(map, key) # will also work
                 Map.get(map, key, :default) # this is different as you can set the default not found value that will be returned
 
                 Map.fetch(map, key) # This will return a tuple with {:ok, value} or :error if not found
-                Map.fecth!(map, key) will only work if the value exists and crash if not
+                Map.fetch!(map, key) will only work if the value exists and crash if not
 
             Structured Data
                 What is nice about maps is that you can access any amount of data and change anything that you want within the map.
@@ -223,7 +223,7 @@ Chapter 2 Building Blocks (19)
                 With this being said it is best to create a map with all the keys present and then modify them as needed nil can be the default value until you know what you want in the field
 
         2.4.7 Binaries and Bitstrings
-            A binary is a chunk of bytes. You can create binaries by encloseing a sequence with << >> it will only store the byte up to 256 anyting higher will result in the rem of the number. However you can denote the amount of bits to use with :: so <<257::16>> 
+            A binary is a chunk of bytes. You can create binaries by enclosing a sequence with << >> it will only store the byte up to 256 anything higher will result in the rem of the number. However you can denote the amount of bits to use with :: so <<257::16>> 
             <<1,1>> # This expression places the number 257 into 16 bits of consecutive memory space. The output indicates that you use 2 bytes, both with a value of 1
 
             <> will concatenate bit strings or binaries
@@ -234,19 +234,19 @@ Chapter 2 Building Blocks (19)
                 #{} # This can embed elixir code within a string
 
                 "You can also 
-                    use mulit line strings"
+                    use multi line strings"
 
                 ~s(this is also a string) # This is using sigils if you want to use quotes in the sigil you must escape them first.
 
-                ~S(doesnt handle escaped characters\\n) # "doesnt handle escaped characters\\n"
+                ~S(doesn't handle escaped characters\\n) # "doesn't handle escaped characters\\n"
 
-                heredocs is the last case and they use """ """
+                here docs is the last case and they use """ """
 
                 same as with bit strings we can concatenate with <>
 
             Character Lists
                 AKA charlist
-                any list of intergers that can be represented as characters can and will be seen as a charlist
+                any list of integers that can be represented as characters can and will be seen as a charlist
                 ~c"ABC" is also a way to get to a charlist
                 'ABC' will also work
 
@@ -255,24 +255,24 @@ Chapter 2 Building Blocks (19)
         2.4.9 First-Class Functions
             Within elixir we can assign a FUNCTION to a variable so in that case we are creating an anonymous function or a lambda
 
-            once it is named you can use the (.) to call it with an input # This is because we want to differentiate the difference betweened a named function and the lambda.
+            once it is named you can use the (.) to call it with an input # This is because we want to differentiate the difference between a named function and the lambda.
 
             So if you want to use an Enum.each() you can set a function before and then pass a list and the function without describing the function in the Enum.each() call.
 
-            Let's add and other bit of sugar: if you want to just skip the complete setting of a function you can use the &IO.puts/1 # This is the capture Opperator.
-                Where the & sets the function and then you can pass &1 &2 &3 etc where they will refrence the first second and third arguement that is passed.
+            Let's add and other bit of sugar: if you want to just skip the complete setting of a function you can use the &IO.puts/1 # This is the capture Operator.
+                Where the & sets the function and then you can pass &1 &2 &3 etc where they will reference the first second and third argument that is passed.
 
             Closures
                 A lambda can reference any variable outside it's scope. So with this you can keep a reference to any outside variable if the function is still held with a reference. This is called closure.
 
-                Keep in mind once the closure is set changing the outside varibale will NOT change the closure.
+                Keep in mind once the closure is set changing the outside variable will NOT change the closure.
         
         2.4.10 Other Built-In Types
-            A reference: Kernel.make_ref/0 this will only be saved for the instance that calles it
+            A reference: Kernel.make_ref/0 this will only be saved for the instance that calls it
 
-            a process idenifier(PID): This is used for dealing with different processes
+            a process identifier(PID): This is used for dealing with different processes
 
-            the port idenifier: IO is the comunication tool.
+            the port identifier: IO is the communication tool.
 
         2.4.11 Higher-Level Types
             Range
@@ -280,34 +280,34 @@ Chapter 2 Building Blocks (19)
                 These are also enumerable
             
             Keyword Lists
-                This is usually set with days = [{:monday, 1}, {:tuesday, 2}] # but can be sortend to 
+                This is usually set with days = [{:monday, 1}, {:tuesday, 2}] # but can be sorted to 
                     days= [monday: 1, tuesday: 2]
 
-                The Keyword module is used in this case. Keep in mind this is still a list and complexity is still O(n) many diffent function will use this syntax to add additional options to a function.
+                The Keyword module is used in this case. Keep in mind this is still a list and complexity is still O(n) many different function will use this syntax to add additional options to a function.
 
             MapSet
-                Use the MapSet module here and you can add in and store uniuqe values, with the value being of any type.
+                Use the MapSet module here and you can add in and store unique values, with the value being of any type.
             
             Times and Dates
                 Here are some types that we can use here:
                     Date (~D), Time(~T), DateTime(~U), NaiveDateTime(~N).
 
-                    Once you set the values you can cakl them with the (.) notation hour minute etc
+                    Once you set the values you can call them with the (.) notation hour minute etc
 
         2.4.12 IO Lists
             This is used to forward output that will be send to and IO device
-            iolist = [[[~c"He"], "llo,"], " worl", "d!"] # This is just "Hello World!"
+            iolist = [[[~c"He"], "llo,"], " work", "d!"] # This is just "Hello World!"
 
-            What is nice is that you can incrementaly set all the things you want sent
+            What is nice is that you can incrementally set all the things you want sent
                 iolist = []
                 iolist = [iolist, "This"]
                 iolist = [iolist, " is"]
                 iolist = [iolist, " an"]
                 iolist = [iolist, " IO list."] # This will append all the new things that will be sent
 
-        2.5 Opperators
-            1 == 1.0 # weak Opperator       true
-            1 === 1.0 # strict Opperator    false
+        2.5 Operators
+            1 == 1.0 # weak Operator       true
+            1 === 1.0 # strict Operator    false
 
             and, or, not
 
@@ -319,15 +319,15 @@ Chapter 2 Building Blocks (19)
             Module Names and Atoms
                 When you create a module you are in fact creating a file that will be run.
 
-            Pure Erland Modules
+            Pure Erlang Modules
                 Now let's talk about this syntax
                     :code.get_path
 
-                Everything that y=ou create will spawn a file with the name xyz.beam  and they will corrispond to an atom
+                Everything that y=ou create will spawn a file with the name xyz.beam  and they will correspond to an atom
 
             Dynamically calling Functions
                 You can Dynamically call function with teh Kernel.apply/3
-                This recieves 3 arguements: the module atom, the function atom, and the list of arguements. Shortend to (MFA) 
+                This receives 3 arguments: the module atom, the function atom, and the list of arguments. Shortened to (MFA) 
 
         2.7.2 Starting the Runtime
             Interactive Shell
@@ -338,7 +338,7 @@ Chapter 2 Building Blocks (19)
                     Beam is started
                     File is compiled in memory
                     Whatever code resides outside of the module is interpreted
-                    Once everyting is finished the Beam is stopped.
+                    Once everything is finished the Beam is stopped.
 
                 If you want to designate that it's a script file append s (exs) where the s stands for script
 
@@ -350,7 +350,7 @@ Chapter 2 Building Blocks (19)
                     end
                     MyModule.run
 
-                If you want to make sure the BEAM doesnt stop on the end you can append --no-halt before the script name # elixir --no-halt script.exs
+                If you want to make sure the BEAM doesn't stop on the end you can append --no-halt before the script name # elixir --no-halt script.exs
 
             The Mix tool
                 This is used to make and use project made up of multiple source files.
@@ -379,10 +379,8 @@ Chapter 2 Building Blocks (19)
          There is no string type. Instead, you can use either binaries (recommended) or
         lists (when needed).
          The built-in complex types are tuples, lists, and maps. Tuples are used to group
-        a small, fixed-size number of fields. Lists are used to manage variable-size collec-
-        tions. A map is a key–value data structure.
-         Range, keyword lists, MapSet, Date, Time, NaiveDateTime, and DateTime are abstrac-
-        tions built on top of the existing built-in types.
+        a small, fixed-size number of fields. Lists are used to manage variable-size collections. A map is a key–value data structure.
+         Range, keyword lists, MapSet, Date, Time, NaiveDateTime, and DateTime are abstractions built on top of the existing built-in types.
          Functions are first-class citizens.
          Module names are atoms (or aliases) that correspond to .beam files on the disk.
          There are multiple ways of starting programs: iex, elixir, and the mix tool.
@@ -407,7 +405,7 @@ Chapter 3 Control Flow (69)
 
         3.1.3 Matching Constants
             1 = 1 # This is a valid elixir expression 
-            quick side note when creating a tuple you can add an extra field in the begining that will denote what kind of tuple you are making
+            quick side note when creating a tuple you can add an extra field in the beginning that will denote what kind of tuple you are making
                 person = {:person, "bob", 25}
 
             Many times with elixir functions will return {:ok, value} or {:error, reason} lets look at this next line of code.
@@ -419,7 +417,7 @@ Chapter 3 Control Flow (69)
             You this syntax to write better cases and help deal with bad results
         
         3.1.4 Variables in Patterns
-            Aonymous variable is the (_) this will help you still pattern match but ignore data you don't need. You can even still have a descriptive name that will not issue a warning if not used.
+            Anonymous variable is the (_) this will help you still pattern match but ignore data you don't need. You can even still have a descriptive name that will not issue a warning if not used.
 
             You can even nest pattern matching:
                 {_, {hour, _, _}} = :calendar.local_time()
@@ -428,7 +426,7 @@ Chapter 3 Control Flow (69)
                  {value, value, value} = {127, 127, 127} # this works
                  {value, value, value} = {127, 127, 1}  # this doesn't work
 
-            Sometimes you will want to pattern match against an allready existing value, this is where the pin operator (^) comes in.
+            Sometimes you will want to pattern match against an already existing value, this is where the pin operator (^) comes in.
                 expected = "bob"
                 {^expected, _} = {"bob", 25}
 
@@ -456,7 +454,7 @@ Chapter 3 Control Flow (69)
                 %{age: age} = %{name: "Bob", age: 25}
             You will need to have the key present with the right hand side or you will be given an error
             
-        3.1.7 Matching Bitsrtings and Binaries
+        3.1.7 Matching Bitstrings and Binaries
             You can pattern match with binaries as well
                 iex(1)> binary = <<1, 2, 3>>
                 <<1, 2, 3>>
@@ -466,7 +464,7 @@ Chapter 3 Control Flow (69)
             There is a way to match the first and then the rest of a binary
                 iex(6)> <<b1, rest :: binary>> = binary
                 <<1, 2, 3>>
-            This states that the rest will be of an abbitrary bit size
+            This states that the rest will be of an arbitrary bit size
 
             You can even separate then into specific sizes
             <<a :: 4, b :: 4>> = << 155 >>
@@ -490,7 +488,7 @@ Chapter 3 Control Flow (69)
 
             Now let's look at a better example
                 {_, {hour, _, _}} = date_time = :calendar.local_time()
-                Keep in mind that the pattern matching will only occur with the values that is not being ommited.
+                Keep in mind that the pattern matching will only occur with the values that is not being omitted.
 
         3.1.9 General Behavior
             Pattern = term
@@ -563,7 +561,7 @@ Chapter 3 Control Flow (69)
                 Arithmetic
                 Type-check
 
-            So last bit is that the error in a Guard will not return an error it will just make the Guard expressoon false and move on to an other function definition.
+            So last bit is that the error in a Guard will not return an error it will just make the Guard expression false and move on to an other function definition.
 
         3.2.3 Multiclause Lambdas
             You can use different clauses within a function definition to separate out the different inputs. This will also be used with Lambdas
@@ -574,7 +572,7 @@ Chapter 3 Control Flow (69)
                         x when is_number(x) and x > 0 -> :positive
                     end
 
-            As you can see here we have differnt types of Guards within a lambda.
+            As you can see here we have different types of Guards within a lambda.
         
     3.3 Conditionals
         If and Case can be used for multicase conditionals. You can also use pattern matching to get a little bit more out of your functions.
@@ -602,7 +600,7 @@ Chapter 3 Control Flow (69)
             if, unless, cond, case are things that might be better than Multiclause as you will have to recreate the function with guards and still pass the proper param.
 
             If and Unless
-                if condtion do
+                if condition do
                     ...
                 else
                     ...
@@ -622,7 +620,7 @@ Chapter 3 Control Flow (69)
                         ...
                     ...
                 end
-                These are used when you can't just pattern match with the value or you have different things to check against. You can also have a defualt case with the last one simply being true -> ...
+                These are used when you can't just pattern match with the value or you have different things to check against. You can also have a default case with the last one simply being true -> ...
 
             case
                 case expression do
@@ -632,10 +630,10 @@ Chapter 3 Control Flow (69)
                         ...
                     ...
                 end
-                The big difference here is that the expression has to pattern match with the expression. You can simply pass a variable that will be evaluated or you can make the expression something that will need to be evaulated. The default pattern will be _ ->
+                The big difference here is that the expression has to pattern match with the expression. You can simply pass a variable that will be evaluated or you can make the expression something that will need to be evaluated. The default pattern will be _ ->
 
         3.3.3 The with Expression
-            This is useful for when you want to chain a couple of expression and then return the error of the first expression that fails. You want to process registraion data.
+            This is useful for when you want to chain a couple of expression and then return the error of the first expression that fails. You want to process registration data.
 
                 %{
                 "login" => "alice",
@@ -665,13 +663,13 @@ Chapter 3 Control Flow (69)
                         {:ok, %{login: login, email: email, password: password}}
                     end
                 end
-    3.4 Loops and Itterations
-        The pricipile looping structure in Elixir is Recursion.
+    3.4 Loops and Iterations
+        The principle looping structure in Elixir is Recursion.
         3.4.1 Iterating with Recursion
             With many of these examples we want to go through the list or numbers 1 by 1. You start at the "end" of the list and then go to the front recursively. That way you print the front then go back through the list.
 
         3.4.2 Tail Function Calls
-            If the last thing a function does is call a function (or itself) then it's considered a Tail Function. Tail Recursion dfoesnt consume any more resources.
+            If the last thing a function does is call a function (or itself) then it's considered a Tail Function. Tail Recursion doesn't consume any more resources.
 
             defmodule ListHelper do
                 def sum(list) do
@@ -700,13 +698,13 @@ Chapter 3 Control Flow (69)
 
             Enum.each/2 takes and enumerable and a lambda therefore it's a higher order function.
             Enum.map/2 is also a Higher order function.
-                Enum.map(list, &(2 * &1)) # simplfied lambda that uses &n to take the place of the nth arguement
+                Enum.map(list, &(2 * &1)) # simplified lambda that uses &n to take the place of the nth argument
 
             Let's talk about filter for a second
                 With this you can something like this
                 case Enum.filter(
                             ["login", "email", "password"],  # Sets the different things to look for
-                            &(not Map.has_key?(user, &1)) # Shorted Lambda to check a difined user
+                            &(not Map.has_key?(user, &1)) # Shorted Lambda to check a defined user
                         ) do
                     [] -> # Returns nothing if its not missing as we check not has_key
                         ...
@@ -724,10 +722,10 @@ Chapter 3 Control Flow (69)
                         end
                     ) # It will follow this syntax
 
-                You can use operators to turn the function into something more consise with &+/2, &*/2
+                You can use operators to turn the function into something more concise with &+/2, &*/2
                     Enum.reduce(list, 0, &+/2) # Will add the values of the list.
 
-                Remembet that you can always have different conditions (multiclass lambda) for pattern matching with any lambda you write:
+                Remember that you can always have different conditions (multiclass lambda) for pattern matching with any lambda you write:
                     Enum.reduce(list_with_not_a_number, 0, fn 
                             element, sum when is_number(element) ->
                             sum + element
@@ -748,7 +746,7 @@ Chapter 3 Control Flow (69)
                     end # In this way you have a clean function that will still have pattern matching (multiclass)
 
         3.4.4 Comprehensions
-            Denotes another expression that can help you iterate and transform enumerables.
+            Denotes another expression that can help you iterate and transform enumerable.
                 for x <- list do
                     x*x
                 end
@@ -763,7 +761,7 @@ Chapter 3 Control Flow (69)
                 This will populate the entire table for the multiplication_table for the numbers 1..9:
                     Map.get(multiplication_table, {7, 6}) # This will pull the key for the {7,6}
 
-                IF you want to do some more filtering for the list you can then use an other param in the defintion.
+                IF you want to do some more filtering for the list you can then use an other param in the definition.
                     for ...
                     ,...
                     , x >= y # This line will ensure that you only return the values for x and y that work with the check.
@@ -779,10 +777,10 @@ Chapter 3 Control Flow (69)
                 stream = Stream.map([1, 2, 3], fn x -> 2 * x end) # This created the stream
                 Enum.to_list(stream) # This takes the stream and does something to it.
 
-            Now remeber that this is a lazy way of doing things it will only do what you ask it for an nothing else. You can use this to your advatage with Enum.take/2
+            Now remember that this is a lazy way of doing things it will only do what you ask it for an nothing else. You can use this to your advantage with Enum.take/2
                 Enum.take(stream, 1)
 
-            Now back to our example we can use the Stream.with_index/1 and knowing how the index is written you can itterate the entire list with some small changes.
+            Now back to our example we can use the Stream.with_index/1 and knowing how the index is written you can iterate the entire list with some small changes.
                 employees
                 |> Stream.with_index()
                 |> Enum.each(fn {employee, index} -> 
@@ -793,8 +791,8 @@ Chapter 3 Control Flow (69)
                 [9, -1, "foo", 25, 49]
                 |> Stream.filter(&(is_number(&1) and &1 > 0))
                 |> Stream.map(&{&1, :math.sqrt(&1)}) 
-                # This was the hardest to get my head around as you are making a consise lambda and then taking 
-                # the first arguement to create a tuple with the number and sqrt.
+                # This was the hardest to get my head around as you are making a concise lambda and then taking 
+                # the first argument to create a tuple with the number and sqrt.
                 |> Stream.with_index()
                 |> Enum.each(fn {{input, result}, index} ->
                     IO.puts("#{index + 1}. sqrt(#{input}) = #{result}")
@@ -810,7 +808,7 @@ Chapter 3 Control Flow (69)
                 end
             
             Infinite Streams
-                What about infinite streams Stream.iterate/2 can come in here. This one will just conitinue to itterate over the function that you pass it
+                What about infinite streams Stream.iterate/2 can come in here. This one will just continue to iterate over the function that you pass it
 
                 Stream.repeatedly/1 will work just as above but is meant to go through a file or stream.
 
@@ -818,7 +816,7 @@ Chapter 3 Control Flow (69)
         Again see the pages that I add to the folder
 
 Chapter 4 Data Abstraction (112)
-    Instead of classes you use modules, also remember that Elixir is immutable so you will always have to rebind the output into the same or an other variable. They might be modifiers and they might be query function but they useually will take and return the same value types.
+    Instead of classes you use modules, also remember that Elixir is immutable so you will always have to rebind the output into the same or an other variable. They might be modifiers and they might be query function but they usually will take and return the same value types.
 
     4.1 Abstracting with Modules
         So without going into the schemaless you can abstract a new data type with the MapSet.new() and MapSet.put/2
@@ -831,15 +829,15 @@ Chapter 4 Data Abstraction (112)
 
             Then once you have the date and title you can add in the update/add functionality
 
-            Once that is done you can add the get_entries based off a date. Keep in mind that this will not store the data within anyting you must pass the map to the function after binding it.
+            Once that is done you can add the get_entries based off a date. Keep in mind that this will not store the data within anything you must pass the map to the function after binding it.
 
         4.1.2 Composting Abstractions
-            You can always take some of the code and move it to an other module. In this way (with the proper nameing)  things will looks more clear. LIke in the example you will create a function/module that will take the add/remove lookup and make it their own functions.
+            You can always take some of the code and move it to an other module. In this way (with the proper naming)  things will looks more clear. LIke in the example you will create a function/module that will take the add/remove lookup and make it their own functions.
 
         4.1.3 Structuring Data with Maps
             Now keep in mind with the above you are manually hardcoding the date to add to the todo, if you were to want to change the entry to an other date type you will break the functionality. What if there was a way to pass everything all at once and then get the information from that item.
 
-            This is were Maps can help again. Put everything into a map and use the (.) notation to pull the iunformation that you need.
+            This is were Maps can help again. Put everything into a map and use the (.) notation to pull the information that you need.
 
         4.1.4 Abstracting with Structs
             With this example we will be trying to deal with fractions. When dealing with a struct you want to use this syntax:
@@ -859,15 +857,15 @@ Chapter 4 Data Abstraction (112)
 
             Structs vs Maps
                 One thing to keep in mind is that you can't Enum a struct they are special.
-                But you can use the Map module in the same way with Structs. Wierd thing here is that a Map can match a struct, but a struct can't match a map. This is because to match to a struct you must have all the fields present and the struct has the __struct__ and the name in the field.
+                But you can use the Map module in the same way with Structs. Weird thing here is that a Map can match a struct, but a struct can't match a map. This is because to match to a struct you must have all the fields present and the struct has the __struct__ and the name in the field.
 
             Records
                 defrecord and defrecordp 
 
         4.1.5 Data Transparency
-            Data is almost never hidden within Elixir. You will have everyting out in the open unless you take away some of the functionality. Most of the outputs will have some flare attached to it from the way the functions return values. The IO module has an inspect that will show more raw data.
+            Data is almost never hidden within Elixir. You will have everything out in the open unless you take away some of the functionality. Most of the outputs will have some flare attached to it from the way the functions return values. The IO module has an inspect that will show more raw data.
 
-            Also keep in mind that the return value of an inspect will alays be the thing that is sent to the inspect. So with label: and pipeing you can debug more easily.
+            Also keep in mind that the return value of an inspect will always be the thing that is sent to the inspect. So with label: and piping you can debug more easily.
 
     4.2 Working with Hierarchial Data
         We want to add CRUD support.
@@ -906,7 +904,7 @@ Chapter 4 Data Abstraction (112)
             We have the functionality for the add_entry/2 already we just need to keep updating the todo_list in the reduce. Remember that you can have ANYTHING for the acc.
 
         4.2.5 Exercise: Importing from a file.
-            See the supporting page for the things that I came upwith but it works just not with the stream. 
+            See the supporting page for the things that I came up with but it works just not with the stream. 
             Going to create a new one that will work with the stream.
 
     4.3 Polymorphism with Protocols
@@ -940,13 +938,12 @@ Chapter 4 Data Abstraction (112)
             What is crazy here is that you can place this anywhere in your code and it will still try to implement the things that you pass to it.
 
         4.3.3 Built-In Protocols
-            Elixir comes with some predefined protocols. While mmany functions have some good use to change, you can do things with the Inspect!!! to change how it prints for any given type. One of the most powerful will be the Enum. These are closely related to the Collectable Protocol.
+            Elixir comes with some predefined protocols. While many functions have some good use to change, you can do things with the Inspect!!! to change how it prints for any given type. One of the most powerful will be the Enum. These are closely related to the Collectable Protocol.
 
             Take a look at the todo.ex and see the end. This is taking the collection protocol and making sure that when you see a TodoList and an Enum.into/1 you will go through the list and replace the simple into function with something that will add each item into your TodoList struct.
 
     Summary
-         A module is used to create an abstraction. A module’s functions create, manip-
-        ulate, and query data. Clients can inspect the entire structure but shouldn’t rely
+         A module is used to create an abstraction. A module’s functions create, manipulate, and query data. Clients can inspect the entire structure but shouldn’t rely
         on its shape.
          Maps can be used to group different fields together in a single structure.
          Structs are special kinds of maps that allow you to define data abstractions
@@ -975,15 +972,15 @@ Chapter 5 Concurrency Primitives (141)
             async_query = # This function will take the param
                 fn query_def -> # Pass it here
                     spawn(fn ->
-                    query_result = run_query.(query_def) # Then pass it here to be run with the lamda above
+                    query_result = run_query.(query_def) # Then pass it here to be run with the lambda above
                     IO.puts(query_result)
                     end)
                 end
 
                 async_query.("query 1")
 
-            Let's take a look at this as it shows a few things that you should need to know. Looking at the comments we see that we are passing the information down through the tree and it will need to be coppied deeply as processes can't share and information.
-                Enum.each(1..5, &async_query.("query #{&1}")) # This will return all 5 at one time. because it will call the spawn 5 times asyncely.
+            Let's take a look at this as it shows a few things that you should need to know. Looking at the comments we see that we are passing the information down through the tree and it will need to be copied deeply as processes can't share and information.
+                Enum.each(1..5, &async_query.("query #{&1}")) # This will return all 5 at one time. because it will call the spawn 5 times asynctly.
 
         5.2.2 Message Passing
             There will be times that you want to do basic calculation within many processes and then pass all the data to a higher process to do the rest of the work. We will use messages here to take care of this.
@@ -992,17 +989,17 @@ Chapter 5 Concurrency Primitives (141)
                     pattern_2 -> do_something_else
                 end
 
-                send(pid, {:an, :arbitray, :term})
+                send(pid, {:an, :arbitrary, :term})
 
-            These messages will be processed in the FIFO pattern and can and will only be limited by the memory of the system. Looking at he above we can still pattern match if we want. Keep in mind that you must pattern match to the block of code and you must have a message in order for the recieve to work. There is a block that you can use to be sure that something happens:
+            These messages will be processed in the FIFO pattern and can and will only be limited by the memory of the system. Looking at he above we can still pattern match if we want. Keep in mind that you must pattern match to the block of code and you must have a message in order for the receive to work. There is a block that you can use to be sure that something happens:
                 receive do
                     message -> IO.inspect(message)
                 after
                     5000 -> IO.puts("message not received")
                 end
 
-            Recieve Behavior
-                SO there are a few cases where a failed pattern match will not fail and will not raise an error and recieve is one of them. It will simply move on to the next message and put the fail message at the end of the queue.
+            Receive Behavior
+                SO there are a few cases where a failed pattern match will not fail and will not raise an error and receive is one of them. It will simply move on to the next message and put the fail message at the end of the queue.
                     1 Take the first message from the mailbox.
                     2 Try to match it against any of the provided patterns, going from top to bottom.
                     3 If a pattern matches the message, run the corresponding code.
@@ -1012,10 +1009,10 @@ Chapter 5 Concurrency Primitives (141)
                     6 If the after clause is specified and no message is matched in the given amount
                     of time, run the code from the after block.
 
-                Remember that EVERYTHING has a return value and the recieve is no differnt it will return the last line before the end break.
+                Remember that EVERYTHING has a return value and the receive is no different it will return the last line before the end break.
 
             Synchronous Sending
-                This uses the "Fire-and-forget" method and will not care about whether the reciever got or processed the message, in order for both parties to know what is happening you have to specify what you need. You can do it with an other send()/2 but then both parties need to know what to do as well as have a need for this.
+                This uses the "Fire-and-forget" method and will not care about whether the receiver got or processed the message, in order for both parties to know what is happening you have to specify what you need. You can do it with an other send()/2 but then both parties need to know what to do as well as have a need for this.
 
                 You will need to send the caller PID in order to get a call back.
                     send(pid, {self(), some_message}) # Self here is the PID
@@ -1037,7 +1034,7 @@ Chapter 5 Concurrency Primitives (141)
 
                 Enum.each(1..5, &async_query.("query #{&1}")) # Sends the 5 messages, but nothing the main process does changes.
 
-                get_result = # Create a lambda to recieve the messages
+                get_result = # Create a lambda to receive the messages
                     fn ->
                         receive do
                         {:query_result, result} -> result
@@ -1047,10 +1044,10 @@ Chapter 5 Concurrency Primitives (141)
                     results = Enum.map(1..5, fn _ -> get_result.() end) # Store the messages into a list.
 
     5.3 Stateful Server Process
-        The idea that you might want to create a long-running processe sthat can server various requests. This is stateful sever process.
+        The idea that you might want to create a long-running process that can server various requests. This is stateful sever process.
 
         5.3.1 Server Processes
-            A server process is an informal name for a process that runs for a long time (or forever). In order to achieve this you will need to raun tail recursion (to reduce the memory and CPU needed)
+            A server process is an informal name for a process that runs for a long time (or forever). In order to achieve this you will need to run tail recursion (to reduce the memory and CPU needed)
 
             defmodule DatabaseServer do
                 def start do
@@ -1058,7 +1055,7 @@ Chapter 5 Concurrency Primitives (141)
                 end
 
                 defp loop do
-                    receive do # recieves a message
+                    receive do # receives a message
                     ...
                     end
 
@@ -1069,12 +1066,12 @@ Chapter 5 Concurrency Primitives (141)
             end
 
             It is standard to put the entire code for the process into it's own module and have 2 types of functions within:
-                interface (public) and implementations (private) I will put the code here as well but make sure to check out the addtional Chapter 5 livebook. Things to keep in mind is that you want to wrap all the message passing within helper functions that will make sure that the cilent will not see all the way you pass messages. You will also want to wrap any query so that you can make it easier to parse the issues that you might see within the code.
+                interface (public) and implementations (private) I will put the code here as well but make sure to check out the additional Chapter 5 livebook. Things to keep in mind is that you want to wrap all the message passing within helper functions that will make sure that the client will not see all the way you pass messages. You will also want to wrap any query so that you can make it easier to parse the issues that you might see within the code.
 
-            Server Processes are Sequentail
+            Server Processes are Sequential
                 Everything within a server is done one at a time. This can be helpful if you want to understand a bug or the process. With that being said you can do more at the same time by creating a pool of processes. 
                     pool = Enum.map(1..100, fn _ -> DatabaseServer.start() end) 
-                    # This will create a list of 100 process (with PID) stored so you can accesss any of them
+                    # This will create a list of 100 process (with PID) stored so you can access any of them
 
                     You then need to pick a process to do the work. 
                     Enum.each(
@@ -1107,13 +1104,13 @@ Chapter 5 Concurrency Primitives (141)
             end
 
             after we set the loop and the start to include the state it is a simple matter to make sure the state is sent with it: 
-                In this case we are useing the start to make a connection to a random pid (not actually but pretending that)
+                In this case we are using the start to make a connection to a random pid (not actually but pretending that)
                 Then passing the state to the loop.
                 The loop will wait for a message from a "User"
                 The user can then use the run_async to pass the pid and the "query"
                 The run_async will then send the message to the server (with the helper function) that will describe the query
                 The run_query will then do the "query" and then hold the message within the stack
-                The user can then recieve the message from the stack with the get_result 
+                The user can then receive the message from the stack with the get_result 
 
         5.3.3 Mutable State
             We want to create a calculator that will hold the current value within the state and the a user can get to the value with a get.
@@ -1123,7 +1120,7 @@ Chapter 5 Concurrency Primitives (141)
                     new_value =
                     receive do
                         {:value, caller} ->
-                        send(caller, {:responce, current_value})
+                        send(caller, {:response, current_value})
 
                         {:add, value} ->
                         current_value + value
@@ -1147,13 +1144,13 @@ Chapter 5 Concurrency Primitives (141)
                     loop(new_value)
                 end
 
-            This is pretty simple as all we are doing is setting the new_value based off of what we recieved from the current state and the atom that tells us the opperation to do
+            This is pretty simple as all we are doing is setting the new_value based off of what we received from the current state and the atom that tells us the operation to do
 
             Next lets set the value function. and the functions that will do the Arithmetic.
                 def value(server_pid) do
                     send(server_pid, {:value, self()})
 
-                    recieve do
+                    receive do
                     {:response, value} ->
                         value
                     end
@@ -1166,7 +1163,7 @@ Chapter 5 Concurrency Primitives (141)
 
             Again pretty simple as we will need a function that will send the current_value and functions that will send the right message to the server.
 
-            Now that we have this all setup we can then do something to the loop to make it more consise while adding in a help function to process the message.
+            Now that we have this all setup we can then do something to the loop to make it more concise while adding in a help function to process the message.
                 defp loop(current_value) do
                     new_value =
                     receive do
@@ -1178,7 +1175,7 @@ Chapter 5 Concurrency Primitives (141)
                 
 
                 defp process_message(current_value, {:value, caller}) do
-                    send(caller, {:responce, current_value})
+                    send(caller, {:response, current_value})
                     current_value
                 end
 
@@ -1211,7 +1208,7 @@ Chapter 5 Concurrency Primitives (141)
              For this there is a special function under the Process module Process.register(pid, name)
                 The name can only be an atom
                 a single process can have only 1 name
-                two processe can not have the same name
+                two process can not have the same name
 
             Look at the Chapter5 for the livebook to see the implementations for this type of function.
             Couple things to go over here. The Process.register(self(), :name) must be done before you spawn a new process within the start, once that is done you no longer need to pass the PID but simply pass the :name. 
@@ -1238,7 +1235,7 @@ Chapter 5 Concurrency Primitives (141)
             Looking at the example you can see that you will be able to spawn the process to send messages but the single server will run into issues send responses. You can see if the number of servers was very high you would have a bottle neck. What can you do? try to optimize the response times for the single response server.
 
         5.4.2 Unlimited Process Mailboxes
-            No lets think about the idea that a mailbox will continue to grow if the messages are not recieved or pattern matched correctly. (YOu should always have a default pattern match).
+            No lets think about the idea that a mailbox will continue to grow if the messages are not received or pattern matched correctly. (YOu should always have a default pattern match).
 
             defp loop
             receive do
@@ -1274,7 +1271,7 @@ Chapter 5 Concurrency Primitives (141)
     endless recursion.
 
 Chapter 6 Generic Server Processes (173)
-    Let's learn about OTP (Open Telcecom Platform)
+    Let's learn about OTP (Open Telecom Platform)
     
     6.1 Building a Generic Server Process
         Here we want to:
@@ -1290,22 +1287,22 @@ Chapter 6 Generic Server Processes (173)
             some_module = IO
             some_module.puts("hello")
 
-        6.1.2 Implemeting the Generic Code
+        6.1.2 Implementing the Generic Code
             With the code in the livebook Chapter_6 we have the star that will use the init. 
             then start the loop
             the return value of the spawn will be a pid.
 
-            With the loop implemente we can go over it.
+            With the loop implementation we can go over it.
                 The loop waits for a message of the format {request, caller}
                 Then sends the response to the caller
                 then restarts the loop.
 
-            Now we need to be able to send a request to the server (as a user they will need to use a call/2 function). We use call in this case as we want to recieve a response.
+            Now we need to be able to send a request to the server (as a user they will need to use a call/2 function). We use call in this case as we want to receive a response.
         
-        6.1.3 Using the Generic Abstration
-            Now that we have the server setup you want to be able to have a callback function that will handle the data that we send and recieve.
+        6.1.3 Using the Generic Abstraction
+            Now that we have the server setup you want to be able to have a callback function that will handle the data that we send and receive.
 
-            Now we can further obfiscate the process by adding in more helper functions. We are trying to remove the user knowing anything about the server. In this case we want to only have the KeyValueStore as the user interface. 
+            Now we can further obfuscate the process by adding in more helper functions. We are trying to remove the user knowing anything about the server. In this case we want to only have the KeyValueStore as the user interface. 
 
             Now we can use start/0 put/3 and get/2
                 KeyValueStore.start()/0
@@ -1314,7 +1311,7 @@ Chapter 6 Generic Server Processes (173)
                 Then the KeyValueStore.put()/3:
                 will call ServerProcess.call()
                 Then it will send a call to ServerProcess that will be of the form {request, caller(self())}
-                The loop will recive that and send the request to the KeyValueStore using handle_call()/2
+                The loop will receive that and send the request to the KeyValueStore using handle_call()/2
                 It will process the :put from the list of handle call
                 Which will {:ok, Map.put}
                 
@@ -1330,7 +1327,7 @@ Chapter 6 Generic Server Processes (173)
             We added an extra bit to the send message and the call as now we need to be able to handle a call or a cast
 
         6.1.5 Exercise: Refactoring the Todo-Server
-            Okay so let's go over this as it was abit of a strugle to figure this whole thing out. 
+            Okay so let's go over this as it was a bit of a struggle to figure this whole thing out. 
             First we wanted to start a ServerProcess with the TodoServer
 
             Second we needed to create 2 functions that will do the work for each action that we want handled.
@@ -1344,41 +1341,41 @@ Chapter 6 Generic Server Processes (173)
             handle_cast({:add_entries, entries}, state)
                 This will actually perform the action to the state and update it.
 
-            We wanted to keep as much of the underlying support awawy from the user so we need helper functions for each step
+            We wanted to keep as much of the underlying support away from the user so we need helper functions for each step
     
     6.2 Using GenServer
         Here are some of the benefits of a GenServer:
             Support for calls and casts
             Customizable timeouts for calls
-            Progagation of server process crashes
+            Propagation of server process crashes
             Support for Distributed Systems
 
         6.2.1 OTP Behavior
-            Behaviour is generic code that implements a common pattern. 
-            Here are some of the standard libraries for Behaviour in OTP:
+            Behavior is generic code that implements a common pattern. 
+            Here are some of the standard libraries for Behavior in OTP:
                  gen_server—Generic implementation of a stateful server process
                  supervisor—Provides error handling and recovery in concurrent systems
                  application—Generic implementation of components and libraries
                  gen_event—Provides event-handling support
-                 gen_statem—Runs a finite state machine in a stateful server process
+                 gen_state—Runs a finite state machine in a stateful server process
 
         6.2.2 Plugging into GenServer
-            When we: use GenServer, there is functions that are injected into the module from compliation. 
+            When we: use GenServer, there is functions that are injected into the module from compilation. 
 
         6.2.3 Handling Requests
-            Now we want to implment the same server using GenServer (See livebook)
+            Now we want to implement the same server using GenServer (See livebook)
             Couple things to go over:
-                init takes 1 arguement and it is the second param of the GenServer.start/2
+                init takes 1 argument and it is the second param of the GenServer.start/2
                 init requires the last line to be of the form {:ok, initial_state}
                 handle_cast needs to be of the form {:noreply, new_state}
                 handle_call needs to be of the form {:reply, response, new_state}
                     response is usually a tuple with ID and and the PID of the caller.
 
-            With the general boilerplate out of the way we need to define the helper functions to allow a user to send and recieve messages.
+            With the general boilerplate out of the way we need to define the helper functions to allow a user to send and receive messages.
 
-        6.2.4 Handling Plain Messags
+        6.2.4 Handling Plain Messages
             Messages contain more than just the message they also include some payload to know what to do.
-            :timer.send_interval/2 can send a message every x miliseconds this will highjack the handle_info/2 callback to take care of its internals.
+            :timer.send_interval/2 can send a message every x milliseconds this will highjack the handle_info/2 callback to take care of its internals.
 
         6.2.5 Other GenServer Features
             Here are a few things to go over before we dive deeper
@@ -1386,7 +1383,7 @@ Chapter 6 Generic Server Processes (173)
                     So when you are building things in GenServer you might find that you are not using the correct version of the function that you are defining. As such if you are about to define a needed function you should denote that its is an @impl which denotes that you are defining a callback function (needed function).
 
                 Name Registration
-                    When starting a Genserver it might be helpful to define a name for the process. GenServer.start/3 can help here.
+                    When starting a GenServer it might be helpful to define a name for the process. GenServer.start/3 can help here.
                     GenServer.start(
                         CallbackModule,
                         init_param,
@@ -1403,7 +1400,7 @@ Chapter 6 Generic Server Processes (173)
                     So if you want to stop the server you can run GenServer.stop/2 or you can set as the last result of a call to be {:stop, reason, new_state} (cast) or {:stop, response, reason, new_state} (call)
 
         6.2.6 Process Life Cycle
-            It is important to know what is happening withint the process of the GenServer. 
+            It is important to know what is happening within the process of the GenServer. 
             Client starts with init 
             GenServer init -> init
             Server starts loop
@@ -1423,19 +1420,18 @@ Chapter 6 Generic Server Processes (173)
     Summary
          A generic server process is an abstraction that implements tasks common to any
         kind of server process, such as recursion-powered looping and message passing.
-         A generic server process can be implemented as a behaviour. A behaviour
+         A generic server process can be implemented as a behavior. A behavior
         drives the process, whereas specific implementations can plug into the
-        behaviour via callback modules.
-         The behaviour invokes callback functions when the specific implementation
+        behavior via callback modules.
+         The behavior invokes callback functions when the specific implementation
         needs to make a decision.
-         GenServer is a behaviour that implements a generic server process.
+         GenServer is a behavior that implements a generic server process.
          A callback module for GenServer must implement various functions. The most
         frequently used of these are init/1, handle_cast/2, handle_call/3, and
         handle_info/2.
          You can interact with a GenServer process with the GenServer module.
          Two types of requests can be issued to a server process: calls and casts.
-         A cast is a fire-and-forget type of request—a caller sends a message and immedi-
-        ately moves on to do something else.
+         A cast is a fire-and-forget type of request—a caller sends a message and immediately moves on to do something else.
          A call is a synchronous send-and-respond request—a caller sends a message and
         waits until the response arrives, the timeout occurs, or the server crashes.
 
@@ -1444,4 +1440,36 @@ Chapter 7 Building a Concurrent System (192)
     What happened if you need to more than 1 file for everything. Here you will find how the mix system works.
     
     7.1 Working with the Mix Project
-        
+         You should place your modules under a common top-level alias. For example,
+        modules might be called Todo.List, Todo.Server, or similar. This reduces the
+        chance of module names conflicting when you combine multiple projects into
+        a single system.
+         In general, one file should contain one module. Occasionally, if a helper mod-
+        ule is small and used only internally, it can be placed in the same file as the
+        module using it. If you want to implement protocols for the module, you can do
+        this in the same file as well.
+         A filename should be an underscore-case (aka snake-case) version of the main
+        module name it implements. For example, a TodoServer module would reside in
+        a todo_server.ex file in the lib folder.
+         The folder structure should correspond to multipart module names. A module
+        called Todo.Server should reside in the lib/todo/server.ex file.
+
+    7.2 Managing Multiple to-do Lists
+        There are two approaches to extending this code to work with multiple lists:
+             Implement a pure functional abstraction to work with multiple to-do lists. Mod-
+            ify Todo.Server to use the new abstraction as its internal state.
+             Run one instance of the existing to-do server for each to-do list.
+
+        7.2.1 Implementing a Cache
+            We ended up creating a (basically) whole new project but copying the project into an other todo_cache folder. Once that was done we then created a new module that will take care of the creating and finding of new PIDs for each todo-list.
+
+        7.2.2 Writing Test
+            Now we can start to write and test the code. We want to try and write as many test to the server as possible always try and be sure that you are just testing module and functions, try not to test everything at once and you should be able to work with what you have.
+
+        7.2.3 Analyzing Process Dependencies
+            Thinking about bottlenecks in the system we have only 1 process to start and find todo-list servers. This could be an issue if the amount of time it take to start (or do the thing we want) take too long.
+
+            Last thing is that if you want to be sure that a list is only modified in sequence then you should be sure that only 1 process is handling it.
+
+    7.3 Persisting Data
+        202
