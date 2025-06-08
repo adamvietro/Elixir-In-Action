@@ -1441,3 +1441,7 @@ Chapter 6 Generic Server Processes (173)
 
 
 Chapter 7 Building a Concurrent System (192)
+    What happened if you need to more than 1 file for everything. Here you will find how the mix system works.
+    
+    7.1 Working with the Mix Project
+        
