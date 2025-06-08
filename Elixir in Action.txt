@@ -1472,4 +1472,75 @@ Chapter 7 Building a Concurrent System (192)
             Last thing is that if you want to be sure that a list is only modified in sequence then you should be sure that only 1 process is handling it.
 
     7.3 Persisting Data
-        202
+        Now we need to talk about making the data persistent so that we can have and load it as we need at a later date.
+        7.3.1 Encoding and Persisting
+            We will use the :erlang.term_to_binary/1 for some of this exercise.
+            File.mkdir_p!/1 will make the folder if it's not already made.
+        
+        7.3.2 Using the Database
+            To use the database you will need 3 things:
+                1 Ensure that a database process is started.
+                2 Persist the list on every modification.
+                3 Try to fetch the list from disk during the first retrieval.
+
+            Storing the Datastore Request
+                With the idea that we will need to maintain and retrieve items from the now file on the system we need to change how we implement the code for adding and retrieving as well as be sure that we also send more information to the functions.
+                     Todo.Server.start now accepts the to-do list name and passes it to
+                    GenServer.start/2.
+                     Todo.Server.init/1 uses this parameter and keeps the list name in the process
+                    state.
+                     Todo.Server.handle callbacks are updated to work with the new state format.                    
+
+                So we start a new TodoServer with the name passed. This can then be kept withing the server state so that we can later use it as a key for the onsite file. It can be error prone but this works for the current setup of our code.
+
+            Reading the Data
+                So in this case we are asking the init for the Todo.Database to send a get that will then try and read the file for the input or just use an empty list.
+                    Keep in mind that anything that you do within an init must be completed before it can move on to an other process. SO try to keep them succinct. There is a way to break the init into other processes. In that case you must use this syntax:
+                        {:ok, initial_state, {:continue, some_arg}}
+                        # this is the last line of the init and does these steps:
+                         The initial state of the server process is set.
+                         The GenServer.start invocation in the caller process is unblocked.
+                         The handle_continue callback is invoked in the server process. The callback
+                        receives the provided argument (from the {:continue, some_arg} tuple) and
+                        the server state.
+
+                    This will then go to the def handle_continue(:init, state) do
+
+        7.3.3 ANalyzing the System
+            Okay so right off the bat init must be done synchronous and the casts can be done asynchronous. 
+            The get call is also synchronous so that might also be a problem if too many calls come in.
+        
+        7.3.4 Addressing the Process Bottleneck
+            Bypassing the Process
+                So what about just not doing a separate process for the database? Well there seems to be 3 reasons to do a separate process:
+                    Long-living state
+                    Wants to keep some of the invocations and reuse them
+                    A critical section of code must be synchronous
+
+                With the current setup yeah we could issue all the Database calls from the Todo_server but if you have too many calls at the same time you will run into issues with too many IO operations that really should be done in sequence.
+
+            Handling Requests Concurrently
+                What about sending out the single servers requests into workers? This will work as the worker will finish the process and then it can be ready for an other job. THis runs into issues when you need things to be concurrent. Cast is easy as it will not need a response but for a call you must be able to send a response to the client.
+
+            Limiting Concurrency with Pooling
+                An other way is instead of ignoring the server way (put the call in the todo-server), or handling each process by with a worker (todo-database) You can have the database spawn the processes.
+    
+    7.3.5 Exercise Pooling and Synchronizing
+        We wanted to change the database and server to create 3 workers that will handle all the read/writes for the database. For this to work we need:
+            The database to create 3 workers and name them with an index that we create.
+            The database worker to take the folder as an option as well and not be hardcoded a name
+            The database to be able to choose a worker :erlang.phash2/2 is a good function for this
+            any call to the database needs to be able to choose a worker so we will need to add that step
+            We are no longer just casting right from the database so all calls that would normally just write/read from there must now call the DatabaseWorker instead.
+            We need to be sure that we are writing to the /folder/person data so we need a way to create the pathway and then read from it so we needed an helper function to take care of that.
+
+    7.4 Reasoning with Processes
+        Try to think of processes as a service that does a single thing that way you can abstract everything out and have a more succinct way of doing things. When things need to communicate you will get into a little bit of trouble but you should be able to reason your way out of it.
+
+    Summary
+         When a system needs to perform various tasks, it’s often beneficial to run different tasks in separate processes. Doing so promotes the scalability and fault tolerance of the system.
+         A process is internally sequential and handles requests one by one. A single process can, thus, keep its state consistent, but it can also cause a performance bottleneck if it serves many clients.
+         Carefully consider calls versus casts. Calls are synchronous and, therefore, block the caller. If a response isn’t needed, casts may improve performance at the expense of reduced guarantees because a client process doesn’t know the utcome.
+         You can use Mix projects to manage projects that consist of multiple modules.
+
+Chapter 8 Fault Tolerance Basics (215)
