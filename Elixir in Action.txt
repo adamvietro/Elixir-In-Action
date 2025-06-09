@@ -1690,3 +1690,35 @@ Chapter 8 Fault Tolerance Basics (215)
             3 Each specification is resolved, if needed, by invoking child_spec/1 from the corresponding module.
             4 The supervisor starts the child process according to the :start field of the child
             specification.
+
+    8.3.4 Wrapping the Supervisor
+        Ok so at this point we have the process for starting the Supervisor within the code. We could then pass the Supervisor.start_link(...) in order to start the system. BUT... you can just add an other layer of code and then use that to pass the same information to the start_link.
+
+    8.3.5 Using a Callback Module
+        Now we have from just above a simple module that will do bacally the same thing as the command line however you could turn it into a callback module for the Supervisor Module.
+
+        See the file system withing the supervised.../todo/system.ex
+
+        You might be asking why would this help... We in the end for our code its is just a glorified Supervisor.start_link(...). But what would happen if you needed to do some more things before you started a link, or you wanted to have a more modular approach. This could and should be thought or each time you make a new Supervisor tree.
+
+    8.3.6 Linking all Processes.
+        Right now if anything crashes you will in the end lose all track of the previous process and all the data within will be lost. 
+
+        The process for taking care of this is to change all start to start_link() its really that simple as these will noe be part of the Supervisor tree. 
+
+        With this all set up you will never loss a process and whatever you do to the process will be kept.
+
+    8.3.7 Restart Frequency
+        Keep this in mind that a Supervisor will not just keep restarting a process. It has a default restart frequency of 3 restarts in 5 seconds.
+
+    Summary
+         There are three types of run-time errors: throws, errors, and exits.
+         When a run-time error occurs, execution moves up the stack to the corresponding try block. If an error isn’t handled, a process will crash.
+         Process termination can be detected in another process. To do this, you can use links or monitors.
+         Links are bidirectional—a crash of either process is propagated to the other process.
+         By default, when a process terminates abnormally, all processes linked to it terminate as well. By trapping exits, you can react to the crash of a linked process and do something about it.
+         A supervisor is a process that manages the life cycle of other processes. It can start, supervise, and restart crashed processes.
+         The Supervisor module is used to start supervisors and work with them.
+         A supervisor is defined by the list of child specifications and the supervision strategy. You can provide these as the arguments to Supervisor.start_link/2, or you can implement a callback module.
+
+Chapter 9 Isolating Error Effects (239)
