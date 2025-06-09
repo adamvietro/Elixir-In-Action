@@ -1544,3 +1544,149 @@ Chapter 7 Building a Concurrent System (192)
          You can use Mix projects to manage projects that consist of multiple modules.
 
 Chapter 8 Fault Tolerance Basics (215)
+    We want to acknowledge that faults happen but limit the effects it has on your system.
+
+    8.1 Runtime Errors
+        Things happening after the code is compiled is a runtime error a type match is one of the most common errors. You could also get a few errors with timeout. Whenever an error occurs it will try and traceback the error to the highest level that could have spawned it.
+
+        8.1.1 Error Types
+            errors
+            exits
+            throws
+
+            raise/1 macro will pass an error, if your function explicitly raises an error append ! to the function name. This should be the case no matter what error is raised so long as you use the raise/1
+
+            exit/1 is an other type of error. This can help you get out of a loop as it will exit the current process. 
+
+            throw/1 is an other type or error. This will throw the value given. As most of the functions and ways of dealing with elixir loops is recursion so if you need to propagate an error all the way to the top throw/1 is a good use case.
+
+        8.1.2 Handling Errors
+            There are ofc was to deal with and catch any of these types of errors
+                try do
+                    ...
+                catch error_type, error_value ->
+                    ...
+                end
+
+            It will do the do block and if an error occurs it will go to the catch block. There is a few examples that we can try with Livebook. See Chapter 8. 
+                Within the example the lambda that we made will take a function and process it.
+
+                Also note that the type and value are patterns as well, so you could add pattern matching to the catch block and deal with each differently.
+
+                If you want to catch anything you can use the type, value or _ and it will treat them all the same.
+
+            We can now take care of the "after" block. Which is run after the try block no matter what happens. 
+
+            All this is basic level abstraction, but we can try and boil it down a bit:
+                  A run-time error has a type, which can be :error, :exit, or :throw.
+                 A run-time error also has a value, which can be any arbitrary term.
+                 If a run-time error isn’t handled, the corresponding process will terminate.
+
+    8.2 Errors in Concurrent Systems
+        Look at the quick example within the Chapter 8 Livebook. As you can see one of the processes finished and the other raised an error the first wasn't affected by the failed one.
+
+        8.2.1 Linking Processes
+            When you are doing anything yeah the processes will not take everything down but if you don't have a strategy to make things come back up your system will not work. This is were linking comes in.
+
+            If one goes down they both do. See the example in Chapter 8
+
+            Trapping Exits
+                While it seems that this would be a bad thing as we want decoupled processes, but if you trap an exit you can then not crash the system and the do something about the error.
+
+                The general format of the message is {:EXIT, from_pid, exit_reason} this is different from the general error format of {reason, where}
+
+        8.2.2 Monitors
+            Links are normally bidirectional but there are times where you would want to have it only go one way.
+            Process.monitor/1 is the way to go here instead of spawn_link/1
+
+    8.3 supervisors
+        We now can talk about how to describe what to do when these things happen and what built-in functions are Available to take care of them.
+        
+        A supervisor is a generic process that manages the life cycle of the other processes in the system. By invoking Supervisor.start_link/2 you are:
+            1 The supervisor process traps exits and then starts the child processes.
+            2 If, at any point in time, a child terminates, the supervisor process receives a corresponding exit message and performs corrective actions, such as restarting the crashed process.
+            3 If the supervisor process terminates, its children are also taken down.
+
+        We want to now add in a supervisor for our todo-code:
+             Todo.Server—Allows multiple clients to work on a single to-do list
+             Todo.Cache—Maintains a collection of to-do servers and is responsible for their creation and discovery
+             Todo.DatabaseWorker—Performs read–write operations on the database
+             Todo.Database—Manages a pool of database workers and forwards database
+            requests to them
+
+        So in this case the Todo-cache starts the whole process so we want to have a supervisor for this process. 
+
+    8.3.1 Preparing the Existing Code
+        So as we have already set the Server Cache DatabaseWorker and Database we only need to make it so the init of the cache will create a link and then name the server so that it doesn't need to be passing the PID.
+
+    8.3.2 Starting the Supervisor Process
+        Okay so we made a few changes and then set some IO.puts to keep track of everything that is started.
+
+        Let's go over the Supervisor.start_link/2
+            Supervisor.start_link(
+                [Todo.Cache], # List of child Specifications
+                strategy: :one_for_one # Strategy for the Relationship
+            )
+
+        In its simplest for the child Specifications is just the Module that it will check for how to start and what to do.
+        The strategy is what happens when there is an issue. one_for_one is when a child goes down you will need to "restart" that child and replace it.
+
+        Couple things here:
+            Once the system is up you can interact with it.
+                bobs_list = Todo.Cache.server_process("Bob's list")
+            We named the cache process so we can now use the name to find its PID
+                cache_pid = Process.whereis(Todo.Cache)
+            We can now exit the process to see what happens with the parent/child Relationship
+                Process.exit(cache_pid, :kill)
+            We should see that the process started back up right away also that the PID for the new child is different
+                Process.whereis(Todo.Cache)
+
+    8.3.3 Child Specification
+        To manage a child process, a supervisor needs some information:
+             How should the child be started?
+             What should be done if the child terminates?
+             What term should be used to uniquely identify each child?
+
+        In normal situations the child_specification would look something like this
+            %{
+                id: Todo.Cache, # named by the module
+                start: {Todo.Cache, :start_link, [nil]}, # Module, start function, params passed
+            }
+
+        For our specific example
+            Supervisor.start_link(
+                [
+                    %{
+                        id: Todo.Cache,
+                        start: {Todo.Cache, :start_link, [nil]}
+                    }
+                ],
+                    strategy: :one_for_one
+            )
+
+        This is the normal way of doing it with everything spelled out. There is an other way that will require that you have the start_link set but you can use:
+            Supervisor.start_link(
+                [{Todo.Cache, nil}],
+                strategy: :one_for_one
+            )
+
+        THis is because GenServer has a child_spec/1 that will generate the needed info
+        You could test this with Todo.Cache.child_spec(nil) # You need to pass the init param
+
+        As I said before you need to:
+        use GenServer
+
+        def start_link(_) do # this is the initial function that is called.
+
+        There is one more way to take some more info out of the Supervisor.start_link/2
+            Supervisor.start_link(
+                [Todo.Cache],
+                strategy: :one_for_one
+            )
+        
+        Quick recap before going further:
+            1 The new process is started, powered by the Supervisor module.
+            2 The supervisor process goes through the list of child specifications and starts each child, one by one.
+            3 Each specification is resolved, if needed, by invoking child_spec/1 from the corresponding module.
+            4 The supervisor starts the child process according to the :start field of the child
+            specification.
