@@ -1,0 +1,82 @@
+# Chapter 9
+
+## Section
+
+```elixir
+Registry.start_link(name: :my_registry, keys: :unique)
+
+spawn(fn ->
+  Registry.register(:my_registry, {:database_worker, 1}, nil)
+
+  receive do
+    msg -> IO.puts("got message #{inspect(msg)}")
+  end
+end)
+```
+
+```elixir
+[{db_worker_pid, _value}] =
+  Registry.lookup(
+    :my_registry,
+    {:database_worker, 1}
+  )
+```
+
+```elixir
+send(db_worker_pid, :some_message)
+```
+
+```elixir
+Registry.lookup(:my_registry, {:database_worker, 1})
+```
+
+```elixir
+defmodule EchoServer do
+  use GenServer
+
+  def start_link(id) do
+    # Registers the server usinga via tuple
+    GenServer.start_link(__MODULE__, nil, name: via_tuple(id))
+  end
+
+  def init(_), do: {:ok, nil}
+
+  def call(id, some_request) do
+    GenServer.call(via_tuple(id), some_request)
+  end
+
+  defp via_tuple(id) do
+    {:via, Registry, {:my_echo, {__MODULE__, id}}} 
+    # This is where the connection is set
+  end
+
+  def handle_call(some_request, _, state) do
+    {:reply, some_request, state}
+  end
+end
+```
+
+```elixir
+# We can now use the registry start link to initiate the servers 
+Registry.start_link(name: :my_echo, keys: :unique)
+```
+
+```elixir
+EchoServer.start_link("server one")
+EchoServer.start_link("server two")
+```
+
+```elixir
+EchoServer.call("server one", :some_request)
+|> IO.inspect()
+Process.sleep(2000)
+EchoServer.call("server two", :another_request)
+|> IO.inspect()
+
+Registry.lookup(:my_echo, {EchoServer, "server one"})
+|> IO.inspect()
+Registry.lookup(:my_echo, {EchoServer, "server two"}) 
+# This will return because a GenServer will stay atice till you
+# close it you dont need the loop
+|> IO.inspect()
+```
