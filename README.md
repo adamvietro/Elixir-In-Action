@@ -31,9 +31,14 @@ We took the Todo Server and added in persistence (making it so that we can write
   
 Then we took that same idea and made it so the process of reading/writing could be concurrent. To accomplish this we need to add in a DatabaseWorker module that took care of the read/write while passing the file to be written/read to/from. Then the Database needed to create x workers and then assign any given task to a worker. Before this step the Database took care of all the read/write so now any call to the database needs to go through DatabaseWorker.  
   
-**Chapter 8**
+**Chapter 8**  
 With this chapter we get to dive into the Supervisor module. We already have a lot of the implementation of the Todo list. So we really just need to set a supervisor and tell it what to do.   
 
 Once you understand the process to create and work with a supervisor you still need to make sure that every start is now a start_link() as this will ensure that when things are restarted they are cleaned up as well as the state will be maintained. 
 
-**Chapter 9**
+**Chapter 9**  
+This chapter gets into the idea od supervisors and crash handling. We start off by making sure the workers for the database are supervised then we move on to the entire system being supervised.    
+
+One thing to add is that in this chapter you might start to become more comfortable with the idea of a crash and what to do in that case. Crashes (when supervised) can be beneficial, as it starts you in a known state. YOu can use this to just get back on track or to try and replicate the crash.  
+
+**Chapter 10**  
