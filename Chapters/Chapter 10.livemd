@@ -1,0 +1,129 @@
+# Chapter 10
+
+## Section
+
+```elixir
+# Random long job that takes time to finish
+long_job =
+  fn ->
+    Process.sleep(2000)
+    :some_result
+  end
+```
+
+```elixir
+task = Task.async(long_job)
+Task.await(task)
+```
+
+```elixir
+# Setting up a set of queries that will run
+run_query =
+  fn query_def ->
+    Process.sleep(2000)
+    "#{query_def} result"
+  end
+```
+
+```elixir
+# You can now create any number of these jobs to work on with an range
+queries = 1..5
+
+tasks =
+  Enum.map(
+    queries,
+    &Task.async(fn -> run_query.("query #{&1}") end)
+  )
+
+Enum.map(tasks, &Task.await/1)
+```
+
+```elixir
+# here is the same thing but with pipes
+task = fn task -> "output #{task}" end
+1..5
+|> Enum.map(&Task.async(fn -> task.(&1) end))
+|> Enum.map(&Task.await(&1))
+```
+
+```elixir
+# Here is a non-awaits Task
+Task.start_link(fn -> 
+  Process.sleep(1000)
+  IO.puts("I did the thing!!!")
+end)
+```
+
+```elixir
+Task.Supervisor.start_link(name: MyTaskSupervisor)
+
+Task.Supervisor.start_child(
+  MyTaskSupervisor,
+  fn ->
+    IO.puts("Task started")
+    Process.sleep(2000)
+    IO.puts("Task stopping")
+  end
+)
+```
+
+```elixir
+# Let's talk agents
+{:ok, pid} = Agent.start_link(fn -> %{name: "Bob", age: 30} end)
+# To get from the state
+Agent.get(pid, fn state -> state.name end)
+# To cast
+Agent.update(pid, fn state -> %{state | age: state.age + 1} end)
+# Check result after
+Agent.get(pid, fn state -> state end)
+# If you want an async update you can use Agent.cast
+```
+
+```elixir
+# Let's talk about concurrent Agent processes
+{:ok, counter} = Agent.start_link(fn -> 0 end)
+
+spawn(fn -> Agent.update(counter, fn count -> count + 1 end) end)
+
+```
+
+```elixir
+Agent.get(counter, fn count -> count end)
+```
+
+```elixir
+defmodule MyAgent do
+  @moduledoc """
+  As you can see here, the agent process is very similar to this. You can pass 
+  anything as a message. Even lambda, that is what an Agent does. So in the end 
+  you just use a simple task like this.
+  """
+  use GenServer
+
+  def start_link(init_fun) do
+    GenServer.start_link(__MODULE__, init_fun)
+  end
+
+  def init(init_fun) do
+    {:ok, init_fun.()}
+  end
+
+  def get(pid, fun) do
+    GenServer.call(pid, {:get, fun})
+  end
+
+  def update(pid, fun) do
+    GenServer.call(pid, {:update, fun})
+  end
+
+  def handle_call({:get, fun}, _from, state) do
+    response = fun.(state)
+    {:reply, response, state}
+  end
+
+  def handle_call({:update, fun}, _from, state) do
+    new_state = fun.(state)
+    {:reply, :ok, new_state}
+  end
+end
+```
