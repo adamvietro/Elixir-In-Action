@@ -3,6 +3,7 @@
         "asynctly",
         "bitstring",
         "defprotocol",
+        "DETS",
         "ebin",
         "erts",
         "iolist",
@@ -10,6 +11,7 @@
         "multiclass",
         "Multiclause",
         "nums",
-        "phash"
+        "phash",
+        "poolsize"
     ]
 }

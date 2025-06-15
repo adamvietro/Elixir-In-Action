@@ -42,3 +42,8 @@ This chapter gets into the idea od supervisors and crash handling. We start off 
 One thing to add is that in this chapter you might start to become more comfortable with the idea of a crash and what to do in that case. Crashes (when supervised) can be beneficial, as it starts you in a known state. YOu can use this to just get back on track or to try and replicate the crash.  
 
 **Chapter 10**  
+In this chapter we started off talking about Tasks. We learned about ways in which we can synchronize tasks or perform them asynchronously.  
+  
+We then went into Agents, this has more detail and ways of dealing with concurrent tasks. They are not as robust as GenServer but if you only need init/1 cast and call you should be fine.  
+    
+Lastly we went into ETS tables. They are a lightweight module that can do a lot of what a GenServer state can do. There will be places that it won't work. But with everything we have learned so far start with GenServer and then reduce the implementation until it works with what you need.  
