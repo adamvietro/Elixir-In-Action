@@ -127,3 +127,258 @@ defmodule MyAgent do
   end
 end
 ```
+
+```elixir
+defmodule KeyValue do
+  use GenServer
+
+  def start_link do
+    GenServer.start_link(__MODULE__, nil, name: __MODULE__)
+  end
+
+  def put(key, value) do
+    GenServer.cast(__MODULE__, {:put, key, value})
+  end
+
+  def get(key) do
+    GenServer.call(__MODULE__, {:get, key})
+  end
+
+  def init(_) do
+    {:ok, %{}}
+  end
+
+  def handle_cast({:put, key, value}, store) do
+    {:noreply, Map.put(store, key, value)}
+  end
+
+  def handle_call({:get, key}, _, store) do
+    {:reply, Map.get(store, key), store}
+  end
+end
+```
+
+```elixir
+# This is just a simple implemetation of the KeyValue as you can see it can 
+# be done in GenServer
+KeyValue.start_link()
+KeyValue.put(:some_key, :some_value)
+KeyValue.get(:some_key)
+```
+
+```elixir
+# Now let's work with :ets
+# we have new/2
+# insert/2
+# lookup/2
+table = :ets.new(:my_table, [])
+:ets.insert(table, {:key_1, 1})
+:ets.insert(table, {:key_2, 2})
+:ets.insert(table, {:key_1, 3}) # Remeber that the last line will trumpe
+```
+
+```elixir
+:ets.lookup(table, :key_1)
+|> IO.inspect()
+:ets.lookup(table, :key_2)
+|> IO.inspect()
+```
+
+```elixir
+# Let's name a table and then see what happens
+:ets.new(:my_table, [:named_table])
+```
+
+```elixir
+# Lets work with the table here
+:ets.insert(:my_table, {:key_1, 3})
+:ets.lookup(:my_table, :key_2)
+```
+
+```elixir
+defmodule EtsKeyValue do
+  @moduledoc """
+  We are going to implement a GenServer to watch the KeyValue store and then
+  Use :ets to do the work to the table
+  """
+  use GenServer
+
+  def start_link do
+    GenServer.start_link(__MODULE__, nil, name: __MODULE__)
+  end
+
+  def init(_) do
+    :ets.new(
+      __MODULE__,
+      [:named_table, :public, write_concurrency: true]
+    )
+
+    {:ok, nil}
+  end
+
+  def put(key, value) do
+    :ets.insert(__MODULE__, {key, value})
+  end
+
+  def get(key) do
+    case :ets.lookup(__MODULE__, key) do
+      [{^key, value}] -> value
+      [] -> nil
+    end
+  end
+end
+```
+
+```elixir
+#Pattern matching
+
+todo_list = :ets.new(:todo_list, [:bag])
+
+# todo_list = :ets.new(:todo_list, [:bag])
+
+:ets.insert(todo_list, {~D[2023-05-24], "Dentist"})
+
+:ets.insert(todo_list, {~D[2023-05-24], "Shopping"})
+
+:ets.insert(todo_list, {~D[2023-05-30], "Dentist"})
+```
+
+```elixir
+# This is a plain lookup
+:ets.lookup(todo_list, ~D[2023-05-24])
+```
+
+```elixir
+# Here is a match
+:ets.match_object(todo_list, {:_, "Dentist"})
+```
+
+```elixir
+defmodule SimpleRegistry do
+  @moduledoc """
+  We want to use GenServer to implement a unique table that can do the 
+  following
+  iex> {:ok, _} = SimpleRegistry.start_link()
+  iex> SimpleRegistry.register(:some_name)
+  :ok
+  iex> SimpleRegistry.register(:some_name)
+  :error
+  iex> pid = SimpleRegistry.whereis(:some_name)
+  iex> not_pid = SimpleRegistry.whereis(:unregistered_name)
+  iex> is_pid(pid) and not is_pid(not_pid)
+  true
+  """
+  use GenServer
+
+  def start_link do
+    GenServer.start_link(__MODULE__, nil, name: __MODULE__)
+  end
+
+  def register(key) do
+    GenServer.call(__MODULE__, {:register, key, self()})
+  end
+
+  def whereis(key) do
+    GenServer.call(__MODULE__, {:whereis, key})
+  end
+
+  @impl GenServer
+  def init(_) do
+    Process.flag(:trap_exit, true)
+    {:ok, %{}}
+  end
+
+  @impl GenServer
+  def handle_call({:register, key, pid}, _, process_registry) do
+    case Map.get(process_registry, key) do
+      nil ->
+        Process.link(pid)
+        {:reply, :ok, Map.put(process_registry, key, pid)}
+
+      _ ->
+        {:reply, :error, process_registry}
+    end
+  end
+
+  @impl GenServer
+  def handle_call({:whereis, key}, _, process_registry) do
+    {:reply, Map.get(process_registry, key), process_registry}
+  end
+
+  @impl GenServer
+  def handle_info({:EXIT, pid, _reason}, process_registry) do
+    {:noreply, deregister_pid(process_registry, pid)}
+  end
+
+  defp deregister_pid(process_registry, pid) do
+    # We'll walk through each {key, value} item, and keep those elements whose
+    # value is different to the provided pid.
+    process_registry
+    |> Enum.reject(fn {_key, registered_process} -> registered_process == pid end)
+    |> Enum.into(%{})
+  end
+end
+```
+
+```elixir
+defmodule SimpleRegistry.ETS do
+  @moduledoc """
+  We want to use ETS and GenServer to implement a unique table that can do the 
+  following
+  iex> {:ok, _} = SimpleRegistry.start_link()
+  iex> SimpleRegistry.register(:some_name)
+  :ok
+  iex> SimpleRegistry.register(:some_name)
+  :error
+  iex> pid = SimpleRegistry.whereis(:some_name)
+  iex> not_pid = SimpleRegistry.whereis(:unregistered_name)
+  iex> is_pid(pid) and not is_pid(not_pid)
+  true
+  """
+  use GenServer
+
+  def start_link do
+    GenServer.start_link(__MODULE__, nil, name: __MODULE__)
+  end
+
+  def register(key) do
+    # We're linking to the registry server first, to avoid possible race condition.Note that it's therefore possible
+    # that a caller process is linked, even though the registration fails. We can't simply unlink on a failing
+    # registration, since a process might be registered under some other term. To properly solve this, we'd need another
+    # ETS table to keep track of whether a process is already registered under some other term. To keep things simple,
+    # this is not done here. For a proper implementation, you can study the Registry code at
+    # https://github.com/elixir-lang/elixir/blob/master/lib/elixir/lib/registry.ex
+    Process.link(Process.whereis(__MODULE__))
+
+    if :ets.insert_new(__MODULE__, {key, self()}) do
+      :ok
+    else
+      :error
+    end
+  end
+
+  def whereis(key) do
+    case :ets.lookup(__MODULE__, key) do
+      [{^key, pid}] -> pid
+      [] -> nil
+    end
+  end
+
+  @doc"""
+  This doesnt need a state as the ETS table is public access any need to acess
+  the table can just be done with the ETS table name.
+  """
+  @impl GenServer
+  def init(_) do 
+    Process.flag(:trap_exit, true)
+    :ets.new(__MODULE__, [:named_table, :public, read_concurrency: true, write_concurrency: true])
+    {:ok, nil}
+  end
+
+  @impl GenServer
+  def handle_info({:EXIT, pid, _reason}, state) do
+    :ets.match_delete(__MODULE__, {:_, pid})
+    {:noreply, state}
+  end
+end
+```

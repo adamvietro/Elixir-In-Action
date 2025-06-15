@@ -1540,7 +1540,7 @@ Chapter 7 Building a Concurrent System (192)
     Summary
          When a system needs to perform various tasks, it’s often beneficial to run different tasks in separate processes. Doing so promotes the scalability and fault tolerance of the system.
          A process is internally sequential and handles requests one by one. A single process can, thus, keep its state consistent, but it can also cause a performance bottleneck if it serves many clients.
-         Carefully consider calls versus casts. Calls are synchronous and, therefore, block the caller. If a response isn’t needed, casts may improve performance at the expense of reduced guarantees because a client process doesn’t know the utcome.
+         Carefully consider calls versus casts. Calls are synchronous and, therefore, block the caller. If a response isn’t needed, casts may improve performance at the expense of reduced guarantees because a client process doesn’t know the outcome.
          You can use Mix projects to manage projects that consist of multiple modules.
 
 Chapter 8 Fault Tolerance Basics (215)
@@ -1866,7 +1866,7 @@ Chapter 9 Isolating Error Effects (239)
             If you are trying to write to the system and it fails you should just let it crash asap and avoid trying to more on from there.
 
         9.3.3 Preserving the State
-            So in order to presever the state after a crash you need to be able to store the state somewhere else (an other process or on the disk). With this being said if you plan on saving to disk you need to be able to keep it as up to date as possible. 
+            So in order to preserve the state after a crash you need to be able to store the state somewhere else (an other process or on the disk). With this being said if you plan on saving to disk you need to be able to keep it as up to date as possible. 
 
             So any time you perform a mutation you should save to disk. Keep this in mind too if the restart is triggered with a bad state and you write that to the disck you will never be able to restart cleanly. So checks on the data to be written can be a big benefit. 
 
@@ -1884,7 +1884,7 @@ Chapter 10 Beyond GenServer (267)
     10.1 Tasks
         This will start a process nop take any messages and then complete it and then end. Lets start off with awaited task.
         10.1.1 Awaited Tasks
-            So once you have a lambda that will do something you can then use Task.async/1 and then Task.await/1 to relieve the result. This is the basic setup for the process. If the result doens't come back within 5 seconds it will raise an error, but this is default so you can change that with the options.
+            So once you have a lambda that will do something you can then use Task.async/1 and then Task.await/1 to relieve the result. This is the basic setup for the process. If the result doesn't come back within 5 seconds it will raise an error, but this is default so you can change that with the options.
 
             If you want to run more than one async you will need to start them all and them await them all too. What is nice is that once you have your map of queries you can just pipe them from one to the other.
             
@@ -1902,7 +1902,7 @@ Chapter 10 Beyond GenServer (267)
             What about communicating with a remote service? You can start a link that will respond to a service await the response then close shop. Let's look to the Chapter 10 Livebook for this one.
 
     10.2 Agents
-        Agents are similar to GenServe but doesnt have all the bells and whistles, if you can get away with just:
+        Agents are similar to GenServe but doesn't have all the bells and whistles, if you can get away with just:
             init/1 handle_cast/2 handle_call/3 it can be replaced with Agent
         
         10.2.1 Basic Use
@@ -1916,4 +1916,106 @@ Chapter 10 Beyond GenServer (267)
             As you can see here, the agent process is very similar to this. You can pass anything as a message. Even lambda, that is what an Agent does. So in the end you just use a simple task like this.
 
         10.2.3 Agent-Powered to-do Server
-            276
+            Okay so now we are going to change the todo server to an agent todo server. Check ou the project under todo_agent
+
+            Couple things to add here so that we can understand why Agents are good but always the best use case. First the state of the Agent is open, with GenServer you are using well defined helper functions to let the end user do the work and all the @impl functions are kept behind those calls.  Also Also GenServer has more functionality for the general use cases that you might find.
+
+        10.2.4 Limitations of Agents
+            With the current todo-list everything that is created is kept within the cache until the process that spawned it is killed. We want to add in some expiry of the to-do servers so that we can free up space as needed. 
+
+            We are going to implement a way for the process to decide on its own when it needs to be killed and an Agent can't tdo that. See todo_cache_expiry mix project. To do this we need to:
+                1 Convert the implementation of the to-do server back to GenServer.
+                2 Include the idle timeout integer in all result tuples of all callback functions.
+                3 Add handle_info/2 and stop the server if the :timeout message arrives.
+
+            For most of the first step 10.5 we are just adding in the @expiry_idle_timeout to the last line of each @impl this will tell the server when to look at the time since last call. 
+
+            init is a bit different as you will need to include the {:continue, :init} This is because you can't do both the continuation and the and the timeout. handle_continue will be called no matter what on init and thus the timeout will be called and restart the timer.
+
+            Let's look at how we stop the server 10.6
+            Pretty simple for the implementation as you just need to declare a handle_info and set the event to :kill
+
+            Also as this is a thing that needs GenServer in most cases its better to start off with GenServer and convert if you need.
+
+    10.3 ETS Tables
+        ETS (Erlang Term Storage) ables are a mechanism that allows you to share some state between multiple processes in a more efficient way.
+
+        The best use of these, although you will get a better performance from them will be:
+            shared key-value structures
+            counters
+
+        For a simple example and module see the Livebook for chapter 10.
+        If you use their implementation from the folder key_value they add in some tests.
+
+        But the crux of the issues is that no matter what you are running a single KeyValue server and it will bottle neck.
+
+        10.3.1 Basic Operations
+            ETS tables have some unusual characteristics
+                 There’s no specific ETS data type. A table is identified by its ID (a reference type) or a global name (an atom).
+                 ETS tables are mutable. A write to a table will affect subsequent read operations.
+                 Multiple processes can write to or read from a single ETS table. Writes and reads might be performed simultaneously.
+                 Minimum concurrency safety is ensured. Multiple processes can safely write to the same row of the same table. The last write wins.
+                 An ETS table resides in a separate memory space. Any data coming in or out is deep copied.
+                 ETS doesn’t put pressure on the garbage collector. Overwritten or deleted data is immediately released.
+                 An ETS table is deeply connected to its owner process (by default, the process that created the table). If the owner process terminates, the ETS table is reclaimed.
+                 Other than on owner-process termination, there’s no automatic garbage collection of an ETS table. Even if you don’t hold a reference to the table, it still occupies memory.
+
+            Check out the chapter 10 Livebook for some examples.
+            Just going to put these here as they are some possible options for the ETS Table.
+                 :set—This is the default. One row per distinct key is allowed.
+                 :ordered_set—This is just like :set, but rows are in term order (comparison via the < and > operators).
+                 :bag—Multiple rows with the same key are allowed, but two rows can’t be completely identical.
+                 :duplicate_bag—This is just like :bag, but it allows duplicate rows.
+
+            Here are some options for the table in general about read/write
+                 :protected—This is the default. The owner process can read from and write to the table. All other processes can read from the table.
+                 :public—All processes can read from and write to the table.
+                 :private—Only the owner process can access the table.
+
+            10.3.2 ETS-powered key-value Store
+                Look to the chapter 10 livebook
+                As with most things start with a GenServer and then scale back to a ETS table.
+
+            10.3.3 Other ETS Operations
+                So there is a lot of other built-in functions you can even traverse the list with first/1 and next/2 but these are not going to be serialized unless you set them to be.
+
+                Let's go over some other things that are Elixir-esch
+
+                Match Pattern
+                    See the chapter 10 livebook
+                    You can pattern match very easily with this setup
+                
+                Other Use Cases for ETS
+                    Managing server wide shared state is one of the most common use cases for ETS
+
+                Beyond ETS
+                    Mnesia is an other embedded database in Elixir
+                     Mnesia is an embedded database—it runs in the same BEAM instance as the rest of your Elixir/Erlang code.
+                     Data consists of Erlang terms.
+                     Tables can be in memory (powered by ETS) or disk based (powered by DETS).
+                     Some typical database features are provided, such as complex transactions, dirty operations, and fast searches via secondary indexes.
+                     Sharding and replication are supported.
+
+    10.3.4 Exercise: Process Registry
+        We want to implement this
+            iex(1)> SimpleRegistry.start_link()
+            {:ok, #PID<0.89.0>}
+            iex(2)> SimpleRegistry.register(:some_name)
+            :ok
+            iex(3)> SimpleRegistry.register(:some_name)
+            :error
+            iex(4)> SimpleRegistry.whereis(:some_name)
+            #PID<0.87.0>
+            iex(5)> SimpleRegistry.whereis(:unregistered_name)
+            nil
+
+        Please head to the Livebook for chapter 10 for this one.
+
+
+    Summary
+         Tasks can be used to run OTP-compliant concurrent job processes.
+         Agents can be used to simplify the implementation of processes that manage some state but don’t need to handle any plain messages.
+         ETS tables can be used to improve performance in some cases, such as shared key–value memory structures.
+
+Chapter 11 Production (295)
+    
