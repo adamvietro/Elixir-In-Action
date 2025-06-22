@@ -1979,7 +1979,7 @@ Chapter 10 Beyond GenServer (267)
             10.3.3 Other ETS Operations
                 So there is a lot of other built-in functions you can even traverse the list with first/1 and next/2 but these are not going to be serialized unless you set them to be.
 
-                Let's go over some other things that are Elixir-esch
+                Let's go over some other things that are Elixir-esque
 
                 Match Pattern
                     See the chapter 10 livebook
@@ -2018,4 +2018,14 @@ Chapter 10 Beyond GenServer (267)
          ETS tables can be used to improve performance in some cases, such as shared key–value memory structures.
 
 Chapter 11 Production (295)
-    
+    Now we want to be able to use third-party libs and be able to produce production level applications.
+
+    11.1 OTP Applications
+        An OTP application is a component that consists of multiple modules and that can depend on other applications. 
+
+        11.1.1 Creating Applications with the mix Tool
+            An application resource file is: a plain-text file written in Erlang terms that describes the application. It can contain:
+                 The application name and version, and a description
+                 A list of application modules
+                 A list of application dependencies (which must be applications themselves)
+                 An optional application-callback module
