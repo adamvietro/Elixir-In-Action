@@ -2029,3 +2029,46 @@ Chapter 11 Production (295)
                  A list of application modules
                  A list of application dependencies (which must be applications themselves)
                  An optional application-callback module
+
+            This is in a sense the set of libs that will be called and its in the mix.ex We are going to spend some time in many different folders to create what we want here. Every project started with mix will have this file. It should describe the project, describe the application, and list the dependencies.
+
+        11.1.2 The Application Behavior
+            The critical part of the mix.exs is the mod: {HelloWorld.Application, []} This is what tells it what module to use to start the application. At minium it will need to define start/2, this will start the top level process
+
+        11.1.3 Starting the Application
+            mix will start the application if you invoke the mix or something similar. Application.start/1 Application.stop/1 can be used to stop the top level process try to be sure that every child is part of or started by the top level process to ensure that everything is stopped properly. There is also System.stop/0 that will stop everything within the entire process.
+
+        11.1.4 Library Applications
+            You don't need to provide the mod: ... 
+            This will be a application that doesn't have a top level process. This might be best used for library applications that will not need to be supervised but will still need to be started.
+
+        11.1.5 Implementing the Application Callback
+            We are now going to take the todo and turn it into an application. To do that we will make an other folder (todo_app) and copy the latest version.
+
+        11.1.6 The Application Folder Structure
+            Mix Environments
+                There are normally 3 types of Environments that mix will use: dev, test, prod. You can use them as you need and you can introduce your own at any time.
+
+                When you invoke mix test you are switching environments and as such will have a different set of rules applied to the code. When you want to switch manually you can invoke the MIX_ENV=name before the call to start the application.
+
+            The Compiled Code Structure
+                complied binaries reside ih the _build/project_env this is where your different set of ENV reside so you can swap.
+
+                The basic folder structure will follow
+                    YourProjectFolder
+                    _build
+                        dev
+                            lib
+                                App1
+                                    ebin
+                                    priv
+                                App2
+                                ... 
+
+                In this way you will always know where to put things.
+
+    11.2 Working with Dependencies
+        You will need to add more and more dependencies to help you with larger and larger projects
+
+        11.2.1 Adding a Dependency
+            WE will add in the poolboy library

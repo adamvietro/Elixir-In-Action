@@ -12,6 +12,7 @@
         "Multiclause",
         "nums",
         "phash",
+        "poolboy",
         "poolsize"
     ]
 }
