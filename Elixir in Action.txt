@@ -2071,4 +2071,35 @@ Chapter 11 Production (295)
         You will need to add more and more dependencies to help you with larger and larger projects
 
         11.2.1 Adding a Dependency
-            WE will add in the poolboy library
+            We will add in the poolboy library. for this you will need to go into the mix.exs and go into the deps definitions.
+            The dependencies are a tuple with the name and the version number. Once that is set you need to run mix deps.get to retrieve the libraries.
+
+        11.2.2 Adapting the Pool
+            You need a pool manager and then once they are set the processes can ask for PID's with checkout and then when done with a worker you can notify the pool manager with checkin
+
+            With this lets adopt the new way of doing things. First we need to start the pool manager, instead of invoking the :poolboy.start_link we can just use the :poolboy.child_spec/3
+
+            See the todo_poolboy project. 
+
+            Next we need to augment how we get the IDs and store them as well.
+            
+            Then finally we need to augment the DatabaseWorker to not need as much information. 
+
+        11.2.3 Visualizing the System
+            Now that we have the full OTP application we can now use observer to see it in action. :observer.start()
+
+            So I wanted to be able to use the built in version of the :observer but that didn't seem to work withing the VsCode terminal.
+
+            I installed this
+            defp deps do
+                [
+                    {:observer_cli, "~> 1.7"}
+                ]
+            end
+
+            And then used :observer_cli.start() to start an in terminal window.
+
+            I will not try to do the same within the WSL terminal.
+
+    11.3 Building a Web Server
+        

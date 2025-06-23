@@ -20,7 +20,8 @@ defmodule Todo.MixProject do
 
   defp deps do
     [
-      {:poolboy, "~> 1.5"}
+      {:poolboy, "~> 1.5"},
+      {:observer_cli, "~> 1.7"}
     ]
   end
 end
