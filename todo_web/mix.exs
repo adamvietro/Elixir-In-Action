@@ -22,7 +22,8 @@ defmodule Todo.MixProject do
     [
       {:poolboy, "~> 1.5"},
       {:observer_cli, "~> 1.7"},
-      {:plug_cowboy, "~> 2.6"}
+      {:plug_cowboy, "~> 2.0"},
+      {:bandit, "~> 1.0"}
     ]
   end
 end

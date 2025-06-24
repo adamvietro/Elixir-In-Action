@@ -49,3 +49,6 @@ We then went into Agents, this has more detail and ways of dealing with concurre
 Lastly we went into ETS tables. They are a lightweight module that can do a lot of what a GenServer state can do. There will be places that it won't work. But with everything we have learned so far start with GenServer and then reduce the implementation until it works with what you need.  
 
 **Chapter 11**  
+This was a chapter that went into adding in other libraries and how to deploy at least on the localhost. Cowboy and Plug or plug_cowboy is a great library for this. Once we had the deps set we then could change a few setting and change the child_spec and then add it to the supervisor tree. Cowboy and Plug have a lot of built-in functions that will do a lot of the heavy lifting.  
+  
+**Chapter 12**  
