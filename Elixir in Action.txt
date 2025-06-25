@@ -2175,4 +2175,148 @@ Chapter 11 Production (295)
          Application environments allow you to provide application settings. This can be useful if you want to expose some configuration to the system operators.
 
 Chapter 12 Building a Distributed System (325)
-    Okay so now we want to distribute the system to more than 1 machine so that a single machine going down doesn't destroy out system.
+    Okay so now we want to distribute the system to more than 1 machine so that a single machine going down doesn't destroy out system. This works to make it so you can scale horizontally. When you get more traffic you can add more machines and then you will still be able to maintain the load, less load less machines are needed. There are a few thing to consider as with every other build of this type, everything is in a sense a remote call as each machine has to think as a single contained unit. You may not know if something has been accomplished without a response and that makes it synchronous, you will have to copy the entire message every time and that can have an issue with memory.
+
+    12.1 Distributed Primitives
+        In order to build a Distributed system in BEAM you connect multiple nodes in a cluster. 
+
+        12.1.1 Starting a Cluster
+            To set up a cluster you need to start a node:
+                iex --sname node@localhost # Provide a node name
+
+                node() # This will return the name of the node.
+
+            -sname is short for short name lol 
+            long name can be used but that requires an IP address and a bit more.
+
+            Now we can start an other node and then connect to the other node with:
+                Node.connect(:node1@localhost)
+
+            Once we are connected we can see the list of connected nodes with:
+                Node.list() 
+                # This doesn't include your active node that you are working on so you could do this on both nodes.
+
+            What is great is that normally BEAM will try to connect as many clusters as you set, making a third node and connecting it to any of the connected nodes will connect all of them.
+
+            When using Node.list() there are params that you can use. [:this, :visible]
+                :this # makes sure that the active node (one you are calling from) is in the list .
+                :visible # makes sure that only visible nodes are shown.
+
+            There is even a method to make sure that nodes stay active and will send pings to nodes in the cluster and without a response will disconnect the node.
+        
+        12.1.2 Communicating Between Nodes
+            Node.spawn/2 is a simple way to communicate between nodes. This will spawn a new process on the target node and it will run.
+                Node.spawn(
+                    :node2@localhost, # Target Node,
+                    fn -> IO.puts("hello from #{node()}") end
+                )
+
+                Node.spawn(
+                    :node2@localhost, # Target Node,
+                    fn -> IO.inspect("hello from #{node()}") end
+                )
+
+            NOTE: This will output on the node1 as IO.puts will always forward the message to the group leader. 
+
+            Okay so now let's from node1 we will start a computation on node2 that will be send back to node1
+                caller = self()
+
+                Node.spawn(
+                    :node2@localhost,
+                    fn -> send(caller, {:response, 1+2}) end # Sends response to the caller
+                )
+
+                flush() # This takes messages from the mailbox of the and prints them to the console.
+
+                NOTE: anything can be sent in the message so long as it works in a BEAM instance.
+                NOTE: avoid sending lambdas to a node. as it will send all the information and send more than is needed you can instead use, Node.spawn/4 which will send the Module and can use as much as needed for each call
+
+            Okay so now that we have the nodes we can then register them, each node can have the a node registered as long as they dont have the same name on the node. 
+                iex(node1@localhost)8> Process.register(self(), :shell) # On node 1 register node1 as :shell
+                true
+                iex(node2@localhost)3> Process.register(self(), :shell) @ Same but different
+                true
+
+            Depending on which node you call from it will send the info to the right shell
+                send(
+                    {:shell, :node2@localhost},
+                    "Hello from node1!"
+                )
+
+        12.1.3 Process Discovery
+            Process discovery is a very important operation in a cluster, but this same operation is used in clusterless mode as well. In fact, distributed system or not, the typical pattern of process communication is always the same:
+                1 A client process must obtain the server’s PID.
+                2 A client sends a message to the server
+
+            Global Registration
+                We want to use :global to register a global register for the names of the nodes.
+                    :global.register_name({:todo_list, "bob"}, self())
+
+                This is a global (for the cluster) registry so trying to do the same thing for node2 will fail as the names is already taken. global will then if the name is valid tell all the other nodes in the system of the new registration.
+                    :global.whereis_name/1 to find the process
+                    :global.whereis_name({:todo_list, "bob"}) # from process other than 1
+                    #PID<12913.116.0>
+                    from node1
+                    #PID<0.116.0>
+
+                This first number represents an other a remote process. 
+                #PID<remote_number.Local_number.Extra_local_number>
+
+                What is great is that you can now use this :global in the start of a GenServer
+                    GenServer.start_link(
+                        __MODULE__,
+                        arg,
+                        name: {:global, some_global_alias} # Registers the process under a global alias
+                    )
+                    GenServer.call({:global, some_global_alias}, ...) # A global alias can be used here.
+            
+            Groups of Processes
+                What is great is that you can register more than 1 process to a single alias, this is helpful when you want to send a message to every process with the same name. IE updates to the data structure etc. For this you use :pg (process groups), we will make sure that both 1 and 2 will process "bob"
+
+                First let's start the :pg
+                    :pg.start_link()
+
+                Start the second node, connect it to the first node, and start :pg:
+                    Node.connect(:node1@localhost)
+                    :pg.start_link()
+
+                You can add both shell processes to a group with the function :pg.join/2:
+                    :pg.join({:todo_list, "bob"}, self())
+                    :pg.join({:todo_list, "bob"}, self()) 
+
+                    the syntax is (:group_identifier, PID_of_process_to_be_added)
+
+                At this point, both processes are in the process group, and both nodes can see this:
+                    :pg.get_members({:todo_list, "bob"})
+                    [#PID<8531.90.0>, #PID<0.90.0>]
+                    :pg.get_members({:todo_list, "bob"})
+                    [#PID<0.90.0>, #PID<7954.90.0>]
+
+                Now to use this we can use GenServer.multi_call/4 to send an update to every node on the group process. But if you need a query you can do it on a single node (so long as they all stay up to date)
+
+        12.1.4 Links and Monitors
+            look into:
+                :net_kernel (https://www.erlang.org/doc/man/net_kernel.html)
+                :net_adm (https://www.erlang.org/doc/man/net_adm.html)
+            :rpc is like node but isn't send and forget
+                :rpc.call(:node2@localhost, Kernel, :abs, [-1])
+
+            There is even a lock function that will lock a node in the cluster and not release it till you say its okay.
+                iex(node1@localhost)1> :global.set_lock({:some_resource, self()})
+                    Even if node2 tries and locks the resource node2 will be held till node1 unlocks the Node
+                iex(node2@localhost)1> :global.set_lock({:some_resource, self()})
+
+                iex(node1@localhost)2> :global.del_lock({:some_resource, self()}) # Now node 2 has it locked
+                iex(node2@localhost)2>
+            This is helpful as with everything that is passed you might want to do some work and then not send all info till a node has finished a process. 
+                def process(large_data) do
+                    :global.trans(
+                        {:some_resource, self},
+                        fn ->
+                            do_something_with(large_data)
+                        end
+                    )
+                end
+
+    12.2 BBuilding a Fault-Tolerant Cluster 
+        (337)

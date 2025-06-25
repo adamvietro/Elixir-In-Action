@@ -3,6 +3,7 @@
         "asynctly",
         "bitstring",
         "checkin",
+        "clusterless",
         "defprotocol",
         "DETS",
         "ebin",
@@ -14,6 +15,7 @@
         "nums",
         "phash",
         "poolboy",
-        "poolsize"
+        "poolsize",
+        "sname"
     ]
 }
