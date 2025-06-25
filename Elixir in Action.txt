@@ -2175,3 +2175,4 @@ Chapter 11 Production (295)
          Application environments allow you to provide application settings. This can be useful if you want to expose some configuration to the system operators.
 
 Chapter 12 Building a Distributed System (325)
+    Okay so now we want to distribute the system to more than 1 machine so that a single machine going down doesn't destroy out system.
