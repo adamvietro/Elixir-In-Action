@@ -2318,5 +2318,201 @@ Chapter 12 Building a Distributed System (325)
                     )
                 end
 
-    12.2 BBuilding a Fault-Tolerant Cluster 
-        (337)
+    12.2 BBuilding a Fault-Tolerant Cluster
+        We will take the GenServer version of the code and turn it into a version that can deal with outages and any other issue that a cluster can solve.
+
+        12.2.1 Cluster Design
+            The goals of this cluster are deceptively simple:
+                 The cluster will consist of multiple nodes, all of which are powered by the same code and provide the same service (a web interface for managing multiple to-do lists).
+                 Changes should be propagated across the cluster. A modification made on a  single to-do list on one node should be visible on all other nodes. From the outside, clients shouldn’t care which node they access.
+                 The crash of a single node shouldn’t disturb the cluster. Service should be provided continuously, and data from the crashed node shouldn’t be lost.
+
+        12.2.2 The Distributed to-do cache
+            Right now we have the todo_cache that has a single process that monitors the children and then has a server that will tell the user what process is taking care of the child (bob's list). Any and all requests will have to go through that process before anything can be done. We need to have the same code everywhere and then be able to ask at any cluster "who is in charge of bob's list?" and get the same answer everywhere.
+
+            Discovering to-do Servers
+                One of the ways to do this is the :global module. This will create a list of all the servers on the cluster and then you can call them with the process you are looking for's PID. Here is what we need to do:
+                    1 Adapt the Todo.Server module to use global registration.
+                    2 Adapt Todo.Cache to work with the new registration.
+
+                Process registrations
+                    You may be puzzled by all these different registration facilities, so let’s recall the key differences:
+                     The basic registration facility is a local registration that allows you to use a simple atom as an alias to the single process on a node.
+                     Registry extends this by letting you use rich aliases—any term can be used as an alias.
+                     :global allows you to register a cluster-wide alias.
+                     :pg is useful for registering multiple processes behind a cluster-wide alias (process group), which is usually suitable for distributed pub–sub scenarios.
+
+                Lets start to change it now.
+                    So when looking at the server.ex we need to only add in the {:global, {__MODULE__, name}} to the name of the new GenServer 
+
+                    We do that but adding in a helper function that will take the name that is passed to the start_link and then use that as wells as the __MODULE__ name to create a :global reference.
+
+                    Keep in mind that the current emplmentation of the code will always try to create a new server for the new list. Because for any :global they entire system needs to be notified about any changes to the global data-base this might not be the best approach. 
+
+                    To make it better we will use the whereis/1 and augment the Todo.Server with this so it will check before making a new server.
+
+                    So we will check with whereis/1 to see if it returns a PID if not we will then create a new server. With this in place we can then just remove the ProcessRegistry.
+                
+                Alternative Discovery
+                    Quick thing about :global it is serialized so that anyone trying to register a new server will have an issue with bottleneck if the size of the users is too large. So there are ways to avoid all the traffic if you always map a the same to-do list name to the same node in the network. 
+                        def node_for_list(todo_list_name) do
+                            all_sorted_nodes = Enum.sort(Node.list([:this, :visible]))
+                            node_index = :erlang.phash2(
+                                todo_list_name,
+                                length(all_sorted_nodes)
+                            )
+                            Enum.at(all_sorted_nodes, node_index)
+                        end
+
+                    THis is the same idea that we used in one of the earlier versions of the code. It will create the node list and then make sure with :erlang.phash2 then add it to the list with the right node_index
+
+                    The process for retrieving a node is as simple as:
+                        :rpc.call(
+                            node_for_list(todo_list_name),
+                            Todo.Cache,
+                            :server_process,
+                            [todo_list_name]
+                        )
+        12.2.3 Implementing a Replicated Database
+            After the changes you just made, you’ll have the following behavior:
+                1 When the first request for Bob’s list arrives, a to-do list is created on the node that handles that request.
+                2 All subsequent requests on Bob’s to-do list are forwarded to the process created in step 1.
+                3 If the node (or the process) created in step 1 crashes, a new request for Bob’s list will cause the new to-do server to be registered.
+
+            We now need to be able to handle crashes to the system, no matter what the system will stay "alive" but if a crash happens you will not be able to recover the data from the crashed node. The way we will start to deal with this is with simply copying the entire cluster. So we will make sure that the entire cluster will have the most up to-date version of the to-do list. Using :rpc we can be sure that everything is kept up to date.
+                1 Rename the existing Database.store function to Database.store_local. The code remains the same.
+                2 Provide the new implementation to Database.store. This new implementation will call Database.store_local on all nodes in the cluster.
+                def store(key, data) do
+                    {_results, bad_nodes} =
+                        :rpc.multicall(
+                            __MODULE__,
+                            :store_local,
+                            [key, data],
+                            :timer.seconds(5)
+                        )
+                    Enum.each(bad_nodes, &IO.puts("Store failed on node #{&1}"))
+                    :ok
+                end
+
+            The syntax of the :rpc_multicall() will return the results (which we don't need) and any bad_nodes. we can then print those or send them in a return message, which we need to now make any cast of the new information a call instead.
+
+            One of the more important things that you need to do is deal with the case of partial-success, because this is one of the more important errors as you might end up with corrupt data that isn't the same across all machines.
+
+        12.2.4 Testing the System
+            We want to make some changes to the way that you are setting the ports to listen on.
+                TODO_SERVER_EXPIRY=600 iex --sname node1@localhost -S mix
+                TODO_SERVER_EXPIRY=600 TODO_HTTP_PORT=5555 \
+                    iex --sname node2@localhost -S mix
+
+            Next, you need to connect the two nodes:
+                iex(node1@localhost)1> Node.connect(:node2@localhost)
+
+            Now, the cluster is established, and you can use your servers. Add an entry for Bob on the first node:
+                curl -d "" \
+                "http://localhost:5454/add_entry?list=bob&date=2023-12-19&title=Dentist"
+                OK
+
+            Then, verify that this entry is visible on another node:
+                curl "http://localhost:5555/entries?list=bob&date=2023-12-19"
+                2023-12-19 Dentist
+
+            You can, thus, safely modify Bob’s list on node2 without compromising the data:
+                curl -d "" \
+                "http://localhost:5555/add_entry?list=bob&date=2023-12-19&title=Movies"
+                curl "http://localhost:5454/entries?list=bob&date=2023-12-19"
+
+            Finally, crashing a single node won’t disturb the system. Stop node1, where Bob’s to-do server is running, and try to query node2:
+                curl "http://localhost:5555/entries?list=bob&date=2023-12-19"
+
+            At this point, your basic cluster is complete. There are some remaining issues, which I won’t address here but will mention:
+                 You should set up a load balancer to serve as a single access point for all clients.
+                 You need a scheme for introducing new nodes to the running cluster. When a new node is introduced, it should first synchronize the database with one of the already connected nodes; then, it can begin serving requests.
+                 Database replication is fragile. You need some kind of two-phase commit strategy.
+                 You need to handle network partitions.
+
+        12.2.5 Detecting Partitions
+            A network partition, or netsplit, is a situation in which two nodes can no longer communicate with each other. There can be all sorts of underlying causes, and it’s impossible to tell them apart:
+                 A network connection is lost.
+                 A network connection is extremely slow.
+                 A remote node has crashed.
+                 A remote node is overloaded and busy to the point that it can’t respond in a timely manner.
+
+            One thing to keep in mind is that you might not know which of the above is the issue, but you should be able on some level be able to see which node is not responding to the pings that happen all the time within a distributed system. So use that to determine the issue. So we will use:
+                :net_kernel.monitor_nodes/1
+                The argument you provide is a Boolean that indicates whether you’re adding a new subscription (true) or installing a single subscriber that overwrites all previous ones on this node (false).
+
+            $ iex --sname node1@localhost
+            iex(node1@localhost)1> :net_kernel.monitor_nodes(true)
+
+            This makes the caller process (in this case, the shell) receive notifications.
+            
+            Now, start two additional nodes and connect them to node1:
+            $ iex --sname node2@localhost
+            iex(node2@localhost)1> Node.connect(:node1@localhost)
+            $ iex --sname node3@localhost
+            iex(node3@localhost)1> Node.connect(:node1@localhost)
+            
+            In the node1 shell, you can see the corresponding messages:
+            iex(node1@localhost)2> flush()
+            {:nodeup, :node2@localhost}
+            {:nodeup, :node3@localhost}
+            
+            The same thing happens on disconnect. You can stop node2 and node3 and check the messages in node1:
+            iex(node1@localhost)3> flush()
+            {:nodedown, :node3@localhost}
+            {:nodedown, :node2@localhost}
+
+        12.2.6 Highly Available Systems
+             Responsiveness
+             Scalability
+             Fault tolerance
+
+    12.3 Networks Considerations
+        12.3.1 Node Names
+            Right now the names have been pretty simple but you can add in the --name to make them longer and able to use a users ip address etc.
+                $ iex --name node1@127.0.0.1
+
+            Just make sure that you aren't trying to connect a short name to a long name.
+
+        12.3.2 Cookies
+            All machines in the system need to share the same cookie in order to connect, everything on the home computer will share the same cookie, but you will need them all to agree on remote machines.
+                iex(node1@localhost)1> Node.get_cookie()
+
+                iex(node1@localhost)1> Node.set_cookie(:some_cookie)
+                iex(node1@localhost)2> Node.get_cookie()
+                :some_cookie
+
+            The other option is to set the same cookie when you create the node.
+                iex --sname node1@localhost --cookie another_cookie
+
+                iex(node1@localhost)1> Node.get_cookie()
+                :another_cookie
+
+        12.3.3 Hidden Nodes
+            There might be times that you want a hidden node that doesn't interact with the entire system and in this case you will need a hidden node. There might be a time that you want to connect with a single node in the cluster and then download any information from that node then get out and you don't want to be part of any of the communication.
+
+            When you start your BEAM instance with the --hidden argument, the node isn’t seen in other nodes’ connected lists (and vice versa).
+
+        12.3.4 Firewalls
+            Luckily, you can provide a fixed range of ports on which a node will listen. This can be done by setting the inet_dist_listen_min and inet_dist_listen_max environment variables of the kernel app at the command line:
+                $ iex \
+                --erl '-kernel inet_dist_listen_min 10000' \
+                --erl '-kernel inet_dist_listen_max 10100' \
+                --sname node1@localhost
+
+            You can manually inspect the ports of all nodes on the host machine via
+                :net_adm.names/0:
+                iex(node1@localhost)1> :net_adm.names()
+                {:ok, [{~c"node1", 10000}]}
+    
+    Summary
+         Distributed systems can improve fault tolerance, eliminating the risk of a single point of failure.
+         Clustering lets you scale out and spread the total load over multiple machines.
+         BEAM-powered clusters are composed of nodes, which are named BEAM instances that can be connected and can communicate.
+         Two nodes communicate via a single TCP connection. If this connection is broken, the nodes are considered disconnected.
+         The main distribution primitive is a process. Sending a message works the same way, regardless of the process location. A remotely registered process can be accessed via {alias, node_name}.
+         Many useful higher-level services built on top of those primitives are available in the :global, :rpc, and GenServer modules.
+         When communicating between nodes, use calls rather than casts.
+         Always consider and prepare for netsplit scenarios.
+
+Chapter 13 Running the System (355)
