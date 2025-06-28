@@ -2516,3 +2516,24 @@ Chapter 12 Building a Distributed System (325)
          Always consider and prepare for netsplit scenarios.
 
 Chapter 13 Running the System (355)
+    Now we need to start the system. We need to compile the system with all the resources start the BEAM and then start the clusters.
+
+    13.1 Running the System with Elixir Tools
+        Running the system amounts to doing the following:
+            1 Compile all modules. Corresponding .beam files must exist somewhere on the
+            disk (as explained in section 2.7). The same holds for the application resource (.app) files of all OTP applications needed to run the system.
+            2 Start the BEAM instance, and set up load paths to include all locations from step 1.
+            3 Start all required OTP applications.
+        With this said you might want to use the mix and elixir to start the system in the background as you might not need to interact with it once it's deployed.
+
+        13.1.1 Using the Mix and Elixir Commands
+            mix run --no-halt # Will start the OTP and make sure that it doesn't ever stop.
+                and other more robust way would be
+            elixir -S nix run --no-halt
+                Same thing more writing but it allows it to run in the background.
+            
+            You can add in the detached flag to make it run without a console output, when using this its best to make it a node while starting the system.
+                elixir --erl "-detached" --sname todo_system@localhost \
+                    -S mix run --no-halt
+
+            
