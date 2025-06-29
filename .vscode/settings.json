@@ -9,6 +9,7 @@
         "ebin",
         "emplmentation",
         "erts",
+        "escript",
         "iolist",
         "multicase",
         "multiclass",

@@ -2536,4 +2536,147 @@ Chapter 13 Running the System (355)
                 elixir --erl "-detached" --sname todo_system@localhost \
                     -S mix run --no-halt
 
+            to check if its up and running use:
+                epmd -names
+
+            Now its up and running and you can use curl to do things to the system that will propagate through the nodes. But if you want to connect to the node you can remote into it with:
+                iex --sname debugger@localhost --remsh todo_system@localhost --hidden
             
+            This will connect to the system as a hidden node that other nodes won't have to ping to be sure that the system is still complete. 
+            
+            To stop the system you can use:
+                System.stop()
+
+            You can they check again what kind of BEAM nodes are still running. You will not see the named node anymore.
+
+            If you want to stop a node programmatically you can use:
+                if Node.connect(:todo_system@localhost) == true do
+                    :rpc.call(:todo_system@localhost, System, :stop, []) # Invokes System.stop/0 on a remote node.
+                    IO.puts "Node terminated."
+                else
+                    IO.puts "Can't connect to a remote node."
+                end
+
+            Store this in a file and you can use it to stop the node (if named correctly anytime you want)
+                elixir --sname terminator@localhost stop_node.exs
+
+        13.1.2 Running Scripts
+            defmodule MyTool do
+                def run do
+                    ...
+                end
+                    ...
+            end
+            MyTool.run() # As long as you put this after the module it will run the function run.
+
+            We can now try to install a external library within a file and then run the code from the command line.
+            Look to random_code_bits/json_decode.exs and run with:
+                elixir json_decode.exs '{"some_key": 42}'
+
+            There might be times that it makes more sense to create a module that will start the OTP and then stop all in the same file. That way everyone can start the OTP the same way and avoid random noise.
+
+            An other way is to package the entire tool into an escript. If you want more info go to:
+                https://hexdocs.pm/mix/Mix.Tasks.Escript.Build.html
+
+            There is also mix archive.install
+                This will zip the entire complied binaries and then make it easier to distribute the mix tasks.
+
+        13.1.3 Compiling for Production
+            There is a way to add in ways to run the code depending on the env you are running in. You can use the Mix.env/0 to see the current environment that the code is running in.
+                defmodule Todo.Database do
+                    case Mix.env() do
+                        :dev ->
+                            def store(key, data) do ... end
+                        :test ->
+                            def store(key, data) do ... end
+                        _ ->
+                            def store(key, data) do ... end
+                    end
+                end
+            Now this is only a compile time check once you are in production you are not going to be able to use the checks. IN this case you might want to write more logs within the test version of the code. Then to start you system in a different env you can use"
+                MIX_ENV=prod elixir -S mix run --no-halt
+            
+            Keep in mind that the dev env doesn't run at peak efficiency and for bottleneck and load should be done in the prod env.
+
+            Quick thing about using mix; you will need the entire system on the machine that will run the mix command. You will have to compile and get all dependencies as well as have elixir and erlang installed as well. 
+    
+    13.2 OTP Releases
+        There is an other way and the is shipped an OTP release, this will have all the compiled and runnable code within itself that can just be executed without compiling again and getting all the dependencies. Plus this paves the way for an important way of running the code and update release handling.
+
+        13.2.1 Building a Release
+            mix release # Will build the release if you have the entire code and the dependencies on the machine.
+                        # also this will build the dev env unless otherwise stated
+            You normally want the release the prod env so you can have the best performance. One way of doing this is adding a def cli into the MixProject.
+
+            defmodule Todo.MixProject do
+                ...
+                def cli do
+                    [
+                        preferred_envs: [release: :prod]
+                    ]
+                end
+                ...
+            end
+
+            The cli function can be used to configure the default Mix environments for different Mix tasks. The function must return a keyword list with supported options. The :preferred_envs option is a keyword list, where each key is the task name (provided as an atom), and the value is the desired default environment for that task.
+
+            After mix release is done, the release will reside in the _build/prod/rel/todo/
+
+        13.2.2 Using a Release
+            The main tool used to interact with a release is the shell script that resides in _build/prod/rel/todo/bin/todo. You can use it to perform all kinds of tasks, such as these:
+                 Start the system and iex shell in the foreground.
+                 Start the system as a background process.
+                 Stop the running system.
+                 Attach a remote shell to the running system.
+
+            The best way to verify is to run the system in the foreground: (from the main folder of the build)
+                RELEASE_NODE="todo@localhost" _build/prod/rel/todo/bin/todo start_iex
+
+            We have a short name for the node and will need that to work on other systems. If you want to use a long name you will need to also include RELEASE_DISTRIBUTION as well.
+
+            To start the system as a background process, you can use the daemon command:
+                RELEASE_NODE="todo@localhost" _build/prod/rel/todo/bin/todo daemon
+
+            Then you can remote into the system with:
+                RELEASE_NODE="todo@localhost" _build/prod/rel/todo/bin/todo remote
+
+            You are now using a elixir shell to access the node/cluster you can ctrl-c twice to end the shell but the but the todo_node will still be running. If it is running in a background process you can stop it with:
+                RELEASE_NODE="todo@localhost" _build/prod/rel/todo/bin/todo stop
+
+            Lastly it is also possible to attach directly to the shell of a running process. The benefit here is that you can capture the standard output. Let's try it now:
+                start the release with iex running
+                    RELEASE_NODE="todo@localhost" _build/prod/rel/todo/bin/todo daemon_iex
+                no we can attach ourselves to the shell with to_erl tool:
+                    _build/prod/rel/todo/erts-13.0/bin/to_erl _build/prod/rel/todo/tmp/pipe/
+
+            Consequently, you can only have one attached session at a time. In addition, you might accidentally stop the running node by hitting Ctrl-\. You should press Ctrl-D to detach from the running node, without stopping it.
+
+            Remember to stop the Node you run:
+                RELEASE_NODE="todo@localhost" _build/prod/rel/todo/bin/todo stop
+
+        13.2.3 Release Contents
+            Let’s spend some time discussing the structure of your release. A fully standalone release consists of the following:
+                 Compiled OTP applications needed to run your system
+                 A file containing arguments that will be passed to the virtual machine
+                 A boot script describing which OTP applications need to be started
+                 A configuration file containing environment variables for OTP applications
+                 A helper shell script to start, stop, and interact with the system
+                 Erlang runtime binaries
+
+                Compiled Libraries
+                    use (ls -1 _build/prod/rel/todo/lib) to check all the libs that are installed
+
+                    If you want to include more into the build you can create a priv folder under your project root. Anything within this folder will automatically be added into the release. You can invoke
+                        Application.app_dir(:an_app_name, "priv")
+                    To find the absolute path to the folder.
+
+                    If you want to prove to yourself that the release has all the required code you can start a env with an iex shell and run:
+                        :code.get_path()
+
+                Configurations
+                    Configuration files reside in the _build/prod/rel/todo/releases/0.1.0 folder. 0.1.0 is the current version of the code. Check out:
+                        vm.args
+                        env.sh
+
+        13.2.4 Packing a Docker Container
+            (367)
