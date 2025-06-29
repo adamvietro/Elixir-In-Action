@@ -10,14 +10,18 @@
         "emplmentation",
         "erts",
         "escript",
+        "hexpm",
         "iolist",
         "multicase",
         "multiclass",
         "Multiclause",
+        "nodedown",
+        "nodeup",
         "nums",
         "phash",
         "poolboy",
         "poolsize",
+        "rebar",
         "sname"
     ]
 }

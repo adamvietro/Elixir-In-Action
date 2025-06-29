@@ -2231,7 +2231,7 @@ Chapter 12 Building a Distributed System (325)
                 NOTE: anything can be sent in the message so long as it works in a BEAM instance.
                 NOTE: avoid sending lambdas to a node. as it will send all the information and send more than is needed you can instead use, Node.spawn/4 which will send the Module and can use as much as needed for each call
 
-            Okay so now that we have the nodes we can then register them, each node can have the a node registered as long as they dont have the same name on the node. 
+            Okay so now that we have the nodes we can then register them, each node can have the a node registered as long as they don't have the same name on the node. 
                 iex(node1@localhost)8> Process.register(self(), :shell) # On node 1 register node1 as :shell
                 true
                 iex(node2@localhost)3> Process.register(self(), :shell) @ Same but different
@@ -2679,4 +2679,98 @@ Chapter 13 Running the System (355)
                         env.sh
 
         13.2.4 Packing a Docker Container
-            (367)
+            You might want to package the release to be used in a docker or Kubernetes cluster. Either way you want to run the system as an OTP release. You will want to run the system in the foreground using:
+                start_iex or start
+
+            start_iex will have some issues mainly that you could accidentally close the shell and thus the cluster.
+            start will start the cluster in the background by you wont be able to interact (unless you remote in) and you wont see the standard output. 
+
+            Let's try to implement the todo on a Docker container. Check out this Docker guide (https://docs.docker.com/get-started/) 
+
+            Check out todo_distributed/Dockerfile to see some comments on the different parts of the docker file. But once it is set you can build then start the docker container with:
+                docker build . -t elixir-in-action/todo # To build the image
+
+            To start the container
+                docker run \
+                    --rm -it \
+                    --name todo_system \
+                    -p "5454:5454" \
+                    elixir-in-action/todo
+
+            You can now interact with the container locally
+                curl -d "" \
+                "http://localhost:5454/add_entry?list=bob&date=2023-12-19&title=Dentist"
+
+                curl "http://localhost:5454/entries?list=bob&date=2023-12-19"
+    
+    13.3 Analyzing System Behavior
+        Even after you are in production your job is not done maintenance is an on going task that must be dealt with. If you want a free book and dealing with errors check out.
+            https://www.erlang-in-anger.com/
+
+        13.3.1 Debugging
+            With a distributed system a step by step debugger will not help much. If you set a break point in the system to wait on what happens will all the other systems? What happens after you get past that does everything go back to normal?
+
+            With this said you need to start to think about how you would fix problems with loggers and tracing. You are in luck in that case as logger is a built-in application. IO.inspect will output the current variable and then pass the data on as the return so you can surround a function with inspects and it will still run just fine.
+
+            There is a more rich experience with the dbg marco (https://hexdocs.pm/elixir/Kernel.html#dbg/2). This will act like an inspect but with more information printed. 
+
+            An other is pry which will allow you to temporarily stoop the system and inspect the current state. (https://hexdocs.pm/iex/IEx.html#pry/0)
+
+        13.3.2 Logging 
+            logger will put all the logs within the log folder under the root folder. Once you start to tell it what to log.
+
+        13.3.3 Interacting with the System
+            With being able to interact (remotely) with the runtime you can get a lot of good information about the system as a hidden node. Once inside you can use:
+                :erlang.system_info/1
+                :erlang.memory/0
+                Process.list/0
+                Process.info/1
+
+                observer
+
+            Check out the todo_distributed/mix.exs
+            The extra_applications is different than the deps as deps is for third-party apps and the extra... is for built-in elixir that is not included in every build.
+
+            Let's start the new system with the logger
+                RELEASE_NODE="todo@localhost" \
+                RELEASE_COOKIE="todo" \
+                _build/prod/rel/todo/bin/todo daemon
+
+                iex --hidden --sname observer@localhost --cookie todo
+                We have set the cookie and then remote in with the same cookie to be sure they can connect
+
+                Now we can start the observer
+                    :observer.start()
+
+        13.3.4 Tracing
+            There is also:
+                :sys
+                :dbg
+
+            We will start a new process and try :sys.trace/2
+                TODO_SERVER_EXPIRY=600 \
+                RELEASE_NODE="todo@localhost" \
+                RELEASE_COOKIE="todo" \
+                _build/prod/rel/todo/bin/todo daemon_iex
+
+
+            Attach to the running node (in an other terminal)
+                RELEASE_NODE="todo@localhost" \
+                RELEASE_COOKIE="todo" \
+                _build/prod/rel/todo/bin/todo remote
+
+            Start the trace
+                :sys.trace(Todo.Cache.server_process("bob"), true)
+
+            Simulate traffic
+                curl "http://localhost:5454/entries?list=bob&date=2023-12-19"
+
+            Stop the trace with
+                :sys.trace(Todo.Cache.server_process("bob"), false)
+
+    Summary
+         To start a system, all code must be compiled. Then, you must start a BEAM instance with properly set up load paths. Finally, you need to start all OTP applications.
+         The simplest way to do this is to rely on Elixir tools such as iex and Mix.
+         An OTP release is a standalone system consisting only of runtime artifacts compiled OTP applications and (optionally) the Erlang runtime system.
+         OTP releases can be easily built with the mix release task.
+         Once the release is running, you can connect to it via a remote shell or attach to ts console. Then, you can interact with the system in various ways and find detailed information about the VM and individual processes.
