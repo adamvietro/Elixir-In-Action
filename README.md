@@ -52,8 +52,13 @@ Lastly we went into ETS tables. They are a lightweight module that can do a lot 
 This was a chapter that went into adding in other libraries and how to deploy at least on the localhost. Cowboy and Plug or plug_cowboy is a great library for this. Once we had the deps set we then could change a few setting and change the child_spec and then add it to the supervisor tree. Cowboy and Plug have a lot of built-in functions that will do a lot of the heavy lifting.  
   
 **Chapter 12**  
-This was a great chapter that didn't take much more lines of code but added a lot to the todo_list. You first start out with starting a cluster and then adding nodes to the cluster. Once you have that set you can communitcate with nodes and flush/0 the messages from the system. Depending on the calls you make you can communicate with every node in the cluster or just a specific one.   
+This was a great chapter that didn't take much more lines of code but added a lot to the todo_list. You first start out with starting a cluster and then adding nodes to the cluster. Once you have that set you can communicate with nodes and flush/0 the messages from the system. Depending on the calls you make you can communicate with every node in the cluster or just a specific one.   
   
 Once you understand the way to create and connect nodes you can then augment the todo_list to use clusters for everything that you do. You need to start with the server module and change it to use the :global to register the node across the cluster. One of the issues with just doing that in this current version of the code is that there is no way of dealing with crashes of a node, the data will not be persisted for a new starting node. We chose to (not the best way to deal with this) to make sure that every node in the cluster is notified and changed with any change in a single node.  
   
 **Chapter 13**  
+This is the final chapter of the book. It goes over a lot of things that should really have a deeper dive as they include the ways in which you can diagnose an issue with the program you have in production.   
+   
+Release is a big part of making a modular production of your product. You want a release so that no matter the system you can pass the release and then start the project without having to have a bunch of things preinstalled.  
+  
+Lastly they went over ways in which to log and view issues with the code. Elixir will naturally log any issue but that doesn't mean we have the entire stack trace that we need for the issue. That is where loggers come in.
